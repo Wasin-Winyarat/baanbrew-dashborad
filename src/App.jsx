@@ -4,6 +4,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  LabelList,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -216,24 +217,40 @@ function App() {
 
         <ChartCard title="ยอดขายแยกสาขา (มากไปน้อย)">
           <ResponsiveContainer>
-            <BarChart data={branchSales} margin={{ left: 0, right: 8 }}>
-              <CartesianGrid vertical={false} stroke={GRID_COLOR} />
+            {/* layout="vertical" = horizontal bars: branches on the Y axis,
+                revenue on the X axis. branchSales is already sorted highest
+                first, and a category Y axis draws the first item on top. */}
+            <BarChart
+              data={branchSales}
+              layout="vertical"
+              margin={{ left: 0, right: 48 }}
+            >
+              <CartesianGrid horizontal={false} stroke={GRID_COLOR} />
               <XAxis
+                type="number"
+                tick={{ fontSize: 12, fill: AXIS_COLOR }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={formatAxisNumber}
+              />
+              <YAxis
+                type="category"
                 dataKey="branch"
                 tick={{ fontSize: 12, fill: AXIS_COLOR }}
                 tickLine={false}
                 axisLine={{ stroke: AXIS_COLOR }}
                 interval={0}
+                width={84}
               />
-              <YAxis
-                tick={{ fontSize: 12, fill: AXIS_COLOR }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={formatAxisNumber}
-                width={40}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="revenue" fill={SERIES_COLOR} radius={[4, 4, 0, 0]} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+              <Bar dataKey="revenue" fill={SERIES_COLOR} radius={[0, 4, 4, 0]} isAnimationActive={false}>
+                <LabelList
+                  dataKey="revenue"
+                  position="right"
+                  formatter={formatAxisNumber}
+                  style={{ fontSize: 12, fill: '#52514e' }}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
