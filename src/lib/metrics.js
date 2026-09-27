@@ -87,9 +87,44 @@ export function computeDailySales(rows) {
     const key = dateKey(row.datetime)
     byDate.set(key, (byDate.get(key) || 0) + rowRevenue(row))
   }
-  return Array.from(byDate, ([date, revenue]) => ({ date, revenue })).sort(
-    (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0),
-  )
+  if (byDate.size === 0) return []
+
+  // Fill every calendar day between the first and last date, with 0 for days
+  // that had no sales (e.g. a branch closed for a day). Without this a
+  // "7-point" moving average would silently span more than 7 days.
+  const keys = Array.from(byDate.keys()).sort()
+  const result = []
+  for (let day = keys[0]; day <= keys[keys.length - 1]; day = nextDateKey(day)) {
+    result.push({ date: day, revenue: byDate.get(day) || 0 })
+  }
+  return result
+}
+
+/**
+ * The calendar day after a "YYYY-MM-DD" key. Uses UTC arithmetic so the
+ * browser's timezone and daylight-saving rules can never skip or repeat a day.
+ * @param {string} key
+ */
+export function nextDateKey(key) {
+  const [y, m, d] = key.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10)
+}
+
+/**
+ * Rows matching the dashboard filters. Dates compare as "YYYY-MM-DD" strings
+ * (same order as calendar order), and both ends are inclusive.
+ * @param {Array<object>} rows
+ * @param {{branch?: string, from?: string, to?: string}} filters
+ *   branch '' = all branches; from/to '' = no limit on that side
+ */
+export function filterRows(rows, { branch = '', from = '', to = '' } = {}) {
+  return rows.filter((row) => {
+    if (branch && row.branch !== branch) return false
+    const day = dateKey(row.datetime)
+    if (from && day < from) return false
+    if (to && day > to) return false
+    return true
+  })
 }
 
 /**
@@ -98,8 +133,8 @@ export function computeDailySales(rows) {
  * the N-1 days before it. The first N-1 days have no full window yet, so
  * their `ma` is null and the chart line starts on day N rather than showing
  * an average of fewer days.
- * Assumes one point per calendar day with no gaps, which is what the sales
- * data has (every day from the first to the last date has sales).
+ * Relies on computeDailySales returning one point per calendar day (gaps are
+ * filled with 0), so N points always means N calendar days.
  * @param {Array<{date: string, revenue: number}>} daily
  * @param {number} [windowDays=7]
  * @returns {Array<{date: string, revenue: number, ma: number|null}>}

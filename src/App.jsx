@@ -4,6 +4,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   LabelList,
   Line,
   LineChart,
@@ -17,6 +18,8 @@ import {
   computeBranchSales,
   computeDailySales,
   computeKpis,
+  dateKey,
+  filterRows,
   formatBaht,
   formatCount,
   formatThaiShortDate,
@@ -37,6 +40,18 @@ const compactNumber = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
 })
 const formatAxisNumber = (v) => compactNumber.format(v)
+
+const INPUT_CLASS =
+  'h-9 w-full rounded-md border border-black/15 bg-white px-2 text-sm text-[#0b0b0b] focus:border-[#2a78d6] focus:outline-none focus:ring-2 focus:ring-[#2a78d6]/20'
+
+function FilterField({ label, children }) {
+  return (
+    <label className="flex min-w-[9rem] flex-1 flex-col gap-1 sm:flex-none">
+      <span className="text-xs text-[#52514e]">{label}</span>
+      {children}
+    </label>
+  )
+}
 
 function KpiCard({ label, value }) {
   return (
@@ -116,15 +131,54 @@ function App() {
       .catch((err) => setError(err.message))
   }, [])
 
-  const kpis = useMemo(() => (rows ? computeKpis(rows) : null), [rows])
+  const [branch, setBranch] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+
+  // Full-data facts for the header and the filter controls.
+  const allBranches = useMemo(
+    () => (rows ? computeBranchSales(rows).map((b) => b.branch) : []),
+    [rows],
+  )
+  const dataRange = useMemo(() => {
+    if (!rows || rows.length === 0) return null
+    let min = dateKey(rows[0].datetime)
+    let max = min
+    for (const row of rows) {
+      const day = dateKey(row.datetime)
+      if (day < min) min = day
+      if (day > max) max = day
+    }
+    return { min, max }
+  }, [rows])
+
+  // KPIs and the daily chart follow every filter. The branch chart follows
+  // only the date range, so the selected branch can still be compared with
+  // the others (it is highlighted instead of shown alone).
+  const dateRows = useMemo(
+    () => (rows ? filterRows(rows, { from, to }) : []),
+    [rows, from, to],
+  )
+  const filteredRows = useMemo(
+    () => (branch ? filterRows(dateRows, { branch }) : dateRows),
+    [dateRows, branch],
+  )
+  const kpis = useMemo(
+    () => (rows ? computeKpis(filteredRows) : null),
+    [rows, filteredRows],
+  )
   const daily = useMemo(
-    () => (rows ? addMovingAverage(computeDailySales(rows), 7) : []),
-    [rows],
+    () => addMovingAverage(computeDailySales(filteredRows), 7),
+    [filteredRows],
   )
-  const branchSales = useMemo(
-    () => (rows ? computeBranchSales(rows) : []),
-    [rows],
-  )
+  const branchSales = useMemo(() => computeBranchSales(dateRows), [dateRows])
+
+  const isFiltered = branch !== '' || from !== '' || to !== ''
+  const resetFilters = () => {
+    setBranch('')
+    setFrom('')
+    setTo('')
+  }
 
   if (error) {
     return (
@@ -149,17 +203,76 @@ function App() {
           <h1 className="text-xl font-semibold text-[#0b0b0b] sm:text-2xl">
             บ้านบรู Dashboard
           </h1>
-          {daily.length > 0 && (
+          {dataRange && (
             <p className="text-sm text-[#52514e]">
               ข้อมูลวันที่{' '}
               <span className="font-medium tabular-nums text-[#0b0b0b]">
-                {formatThaiShortDate(daily[0].date)} –{' '}
-                {formatThaiShortDate(daily[daily.length - 1].date)}
+                {formatThaiShortDate(dataRange.min)} –{' '}
+                {formatThaiShortDate(dataRange.max)}
               </span>
             </p>
           )}
         </div>
 
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-black/10 bg-white p-3 shadow-sm sm:gap-4 sm:p-4">
+          <FilterField label="สาขา">
+            <select
+              value={branch}
+              onChange={(e) => setBranch(e.target.value)}
+              className={INPUT_CLASS}
+            >
+              <option value="">ทุกสาขา</option>
+              {allBranches.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="ตั้งแต่วันที่">
+            <input
+              type="date"
+              value={from}
+              min={dataRange?.min}
+              max={to || dataRange?.max}
+              onChange={(e) => setFrom(e.target.value)}
+              className={INPUT_CLASS}
+            />
+          </FilterField>
+          <FilterField label="ถึงวันที่">
+            <input
+              type="date"
+              value={to}
+              min={from || dataRange?.min}
+              max={dataRange?.max}
+              onChange={(e) => setTo(e.target.value)}
+              className={INPUT_CLASS}
+            />
+          </FilterField>
+          <button
+            type="button"
+            onClick={resetFilters}
+            disabled={!isFiltered}
+            className="h-9 rounded-md border border-black/15 px-3 text-sm text-[#0b0b0b] hover:bg-black/5 disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            ล้างตัวกรอง
+          </button>
+          {isFiltered && (
+            <p className="basis-full text-xs text-[#52514e]">
+              กำลังแสดง: {branch || 'ทุกสาขา'} ·{' '}
+              {formatThaiShortDate(from || dataRange.min)} –{' '}
+              {formatThaiShortDate(to || dataRange.max)} ·{' '}
+              {formatCount(filteredRows.length)} แถว
+            </p>
+          )}
+        </div>
+
+        {filteredRows.length === 0 ? (
+          <div className="rounded-lg border border-black/10 bg-white p-8 text-center text-[#52514e] shadow-sm">
+            ไม่มีข้อมูลในสาขาและช่วงวันที่ที่เลือก
+          </div>
+        ) : (
+        <>
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
           <KpiCard label="ยอดขายรวม" value={formatBaht(kpis.totalRevenue)} />
           <KpiCard label="จำนวนบิล" value={formatCount(kpis.billCount)} />
@@ -255,6 +368,14 @@ function App() {
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
               <Bar dataKey="revenue" fill={SERIES_COLOR} radius={[0, 4, 4, 0]} isAnimationActive={false}>
+                {/* With a branch selected, its bar stays solid and the others
+                    fade, so it can still be compared against them. */}
+                {branchSales.map((b) => (
+                  <Cell
+                    key={b.branch}
+                    fillOpacity={!branch || b.branch === branch ? 1 : DAILY_LINE_OPACITY}
+                  />
+                ))}
                 <LabelList
                   dataKey="revenue"
                   position="right"
@@ -265,6 +386,8 @@ function App() {
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
+        </>
+        )}
       </div>
     </div>
   )
