@@ -145,9 +145,20 @@ function App() {
   return (
     <div className="min-h-screen bg-[#f9f9f7] px-4 py-5 sm:p-6">
       <div className="mx-auto max-w-6xl space-y-4 sm:space-y-6">
-        <h1 className="text-xl font-semibold text-[#0b0b0b] sm:text-2xl">
-          บ้านบรู Dashboard
-        </h1>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h1 className="text-xl font-semibold text-[#0b0b0b] sm:text-2xl">
+            บ้านบรู Dashboard
+          </h1>
+          {daily.length > 0 && (
+            <p className="text-sm text-[#52514e]">
+              ข้อมูลวันที่{' '}
+              <span className="font-medium tabular-nums text-[#0b0b0b]">
+                {formatThaiShortDate(daily[0].date)} –{' '}
+                {formatThaiShortDate(daily[daily.length - 1].date)}
+              </span>
+            </p>
+          )}
+        </div>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
           <KpiCard label="ยอดขายรวม" value={formatBaht(kpis.totalRevenue)} />
