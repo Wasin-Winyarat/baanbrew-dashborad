@@ -1,14 +1,15 @@
 import Papa from 'papaparse'
 import { useEffect, useMemo, useState } from 'react'
 import App from './App.jsx'
+import CustomersPage from './customers/CustomersPage.jsx'
 import Lab2Page from './lab2/Lab2Page.jsx'
 import { prepareRows } from './lib/metrics'
 
-// Loads the CSVs once and switches between the overview dashboard and the
-// Lab 2.2 page. The tab is kept in the URL hash (#lab2) so it survives a
-// refresh and can be linked to directly.
+// Loads the CSVs once and switches between the tabs. The tab is kept in the
+// URL hash (#customers, #lab2) so it survives a refresh and can be linked to.
 const TABS = [
   { id: 'overview', label: 'ภาพรวม' },
+  { id: 'customers', label: 'ลูกค้า' },
   { id: 'lab2', label: 'Lab 2.2 · ซ่อมกราฟ' },
 ]
 
@@ -18,19 +19,24 @@ async function loadCsv(url) {
   return Papa.parse(await res.text(), { header: true, skipEmptyLines: true }).data
 }
 
-const tabFromHash = () => (window.location.hash === '#lab2' ? 'lab2' : 'overview')
+const tabFromHash = () => {
+  const id = window.location.hash.slice(1)
+  return TABS.some((t) => t.id === id) ? id : 'overview'
+}
 
 function Root() {
   const [rows, setRows] = useState(null)
   const [products, setProducts] = useState(null)
+  const [customers, setCustomers] = useState(null)
   const [error, setError] = useState(null)
   const [tab, setTab] = useState(tabFromHash)
 
   useEffect(() => {
-    Promise.all([loadCsv('/sales.csv'), loadCsv('/products.csv')])
-      .then(([sales, prods]) => {
+    Promise.all([loadCsv('/sales.csv'), loadCsv('/products.csv'), loadCsv('/customers.csv')])
+      .then(([sales, prods, custs]) => {
         setRows(sales)
         setProducts(prods)
+        setCustomers(custs)
       })
       .catch((err) => setError(err.message))
   }, [])
@@ -49,7 +55,7 @@ function Root() {
 
   const choose = (id) => {
     setTab(id)
-    window.history.replaceState(null, '', id === 'lab2' ? '#lab2' : window.location.pathname)
+    window.history.replaceState(null, '', id === 'overview' ? window.location.pathname : `#${id}`)
   }
 
   return (
@@ -77,6 +83,8 @@ function Root() {
         <p className="p-6 text-center text-[#52514e]">กำลังโหลดข้อมูล...</p>
       ) : tab === 'overview' ? (
         <App rows={rows} />
+      ) : tab === 'customers' ? (
+        <CustomersPage customers={customers} sales={rows} />
       ) : (
         <div className="mx-auto max-w-6xl px-4 py-5 sm:p-6">
           <Lab2Page rows={labRows} products={products} />
