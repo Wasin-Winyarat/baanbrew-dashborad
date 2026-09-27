@@ -201,3 +201,52 @@ export function formatThaiShortDate(key) {
 export function formatCount(value) {
   return Math.round(value).toLocaleString('th-TH')
 }
+
+// --- Lab 2.2 ---------------------------------------------------------------
+// src/lab2/ (copied from the Lab 2.2 starter) expects rows that already carry
+// numeric `revenue`, a `date` key and an `hour`, and imports dailyRevenue from
+// this file. BadCharts.jsx must not be edited, so these live here.
+
+/**
+ * Adds the fields the Lab 2.2 charts read: revenue, date ("YYYY-MM-DD") and
+ * hour. Original CSV fields are kept, so the result still works with every
+ * function above.
+ * @param {Array<object>} rows
+ */
+export function prepareRows(rows) {
+  return rows
+    .filter((row) => row.order_id)
+    .map((row) => ({
+      ...row,
+      revenue: rowRevenue(row),
+      date: dateKey(row.datetime),
+      hour: Number(String(row.datetime).slice(11, 13)),
+    }))
+}
+
+/**
+ * Daily revenue for rows from prepareRows(). Unlike computeDailySales it does
+ * not fill days with no sales — BadChart3 plots exactly the days in the data.
+ * @param {Array<{date: string, revenue: number}>} rows
+ */
+export function dailyRevenue(rows) {
+  const byDate = new Map()
+  for (const row of rows) byDate.set(row.date, (byDate.get(row.date) || 0) + row.revenue)
+  return Array.from(byDate, ([date, revenue]) => ({ date, revenue })).sort((a, b) =>
+    a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+  )
+}
+
+/**
+ * Short baht for chart axes, e.g. 1500 -> "฿1.5K", 1230027 -> "฿1.2M".
+ * Keeps one decimal so neighbouring ticks (1,500 vs 2,000) never collapse
+ * into the same label.
+ * @param {number} value
+ */
+const compactNumber = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+})
+export function formatShortBaht(value) {
+  return `฿${compactNumber.format(value)}`
+}

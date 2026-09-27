@@ -1,5 +1,4 @@
-import Papa from 'papaparse'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -111,26 +110,9 @@ function CustomTooltip({ active, payload, label, labelPrefix = '', labelFormatte
   )
 }
 
-function App() {
-  const [rows, setRows] = useState(null)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    fetch('/sales.csv')
-      .then((res) => {
-        if (!res.ok) throw new Error(`โหลด sales.csv ไม่สำเร็จ (${res.status})`)
-        return res.text()
-      })
-      .then((csvText) => {
-        const parsed = Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: true,
-        })
-        setRows(parsed.data)
-      })
-      .catch((err) => setError(err.message))
-  }, [])
-
+// The overview tab. sales.csv is loaded once in Root.jsx and passed in, so
+// the Lab 2.2 tab can share the same rows.
+function App({ rows }) {
   const [branch, setBranch] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
@@ -178,14 +160,6 @@ function App() {
     setBranch('')
     setFrom('')
     setTo('')
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] p-6">
-        <p className="text-[#d03b3b]">{error}</p>
-      </div>
-    )
   }
 
   if (!rows || !kpis) {
