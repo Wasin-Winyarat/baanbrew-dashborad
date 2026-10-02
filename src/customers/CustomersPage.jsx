@@ -41,7 +41,18 @@ const tooltipProps = (label, fmt = formatCount) => ({
   cursor: { fill: 'rgba(0,0,0,0.04)' },
 })
 
-function ChartCard({ title, summary, children }) {
+/** ตัวเลขสรุปบนสุดของหน้า ใช้หน้าตาเดียวกับ KpiCard ในหน้าภาพรวม และมีบรรทัดอธิบายเสริมได้ */
+function StatCard({ label, value, note }) {
+  return (
+    <div className="min-w-0 rounded-lg border border-black/10 bg-white p-3 shadow-sm sm:p-4">
+      <p className="text-xs text-[#52514e] sm:text-sm">{label}</p>
+      <p className="mt-1 break-words text-lg font-semibold tabular-nums text-[#0b0b0b] sm:text-2xl">{value}</p>
+      {note && <p className="mt-1 text-xs leading-snug text-[#52514e]">{note}</p>}
+    </div>
+  )
+}
+
+function ChartCard({ title, summary, note, children }) {
   return (
     <div className="flex flex-col rounded-lg border border-black/10 bg-white p-3 shadow-sm sm:p-4">
       <h2 className="text-base font-semibold text-[#0b0b0b]">{title}</h2>
@@ -49,6 +60,7 @@ function ChartCard({ title, summary, children }) {
       <div className="mt-3 h-64 w-full">
         <ResponsiveContainer>{children}</ResponsiveContainer>
       </div>
+      {note && <p className="mt-2 text-xs leading-snug text-[#52514e]">{note}</p>}
     </div>
   )
 }
@@ -125,6 +137,18 @@ function NewMembersChart({ customers, dataEnd }) {
           <>{thaiMonth(last.month)} ได้สมาชิกใหม่ {formatCount(last.count)} คน <b>{change >= 0 ? 'มากกว่า' : 'น้อยกว่า'} {thaiMonth(prev.month)} {pct(Math.abs(change))}</b></>
         )
       }
+      note={
+        last.partial && (
+          <>
+            <span
+              className="mr-1 inline-block h-2.5 w-2.5 rounded-sm align-middle"
+              style={{ backgroundColor: MAIN, opacity: FADED }}
+            />
+            แท่งจาง = ข้อมูลไม่ครบเดือน · {thaiMonth(last.month)} มีข้อมูลสมัครถึง {formatThaiShortDate(dataEnd)} เท่านั้น
+            ({last.days}/{last.fullDays} วัน) แท่งจึงเตี้ยกว่าเดือนอื่น อย่าเทียบจำนวนรวมตรง ๆ ให้เทียบค่าเฉลี่ยต่อวันด้านบน
+          </>
+        )
+      }
     >
       <BarChart data={data} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
         <CartesianGrid vertical={false} stroke={GRID} />
@@ -146,8 +170,7 @@ function NewMembersChart({ customers, dataEnd }) {
 }
 
 /** สมาชิกกลับมาซื้อซ้ำไหม: จำนวนสมาชิกตามจำนวนบิลที่ซื้อ รวมคนที่สมัครแล้วยังไม่เคยซื้อ */
-function VisitsChart({ customers, sales }) {
-  const v = useMemo(() => memberVisitBuckets(customers, sales), [customers, sales])
+function VisitsChart({ visits: v }) {
   const never = v.buckets[0]
   return (
     <ChartCard
@@ -170,6 +193,17 @@ function VisitsChart({ customers, sales }) {
 export default function CustomersPage({ customers, sales }) {
   const joinedEnd = useMemo(() => lastJoinedDate(customers), [customers])
   const salesEnd = useMemo(() => lastSaleDate(sales), [sales])
+  const visits = useMemo(() => memberVisitBuckets(customers, sales), [customers, sales])
+  const billShare = useMemo(() => {
+    const bills = new Set()
+    const memberBills = new Set()
+    for (const row of sales) {
+      bills.add(row.order_id)
+      if (row.customer_id) memberBills.add(row.order_id)
+    }
+    return { bills: bills.size, memberBills: memberBills.size }
+  }, [sales])
+  const neverBought = visits.buckets[0].count
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-5 sm:space-y-6 sm:p-6">
       <div>
@@ -179,11 +213,29 @@ export default function CustomersPage({ customers, sales }) {
           · ข้อมูลการซื้อจาก sales.csv ถึง {formatThaiShortDate(salesEnd)}
         </p>
       </div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+        <StatCard label="สมาชิกทั้งหมด" value={formatCount(visits.total)} />
+        <StatCard
+          label="เคยซื้ออย่างน้อย 1 บิล"
+          value={formatCount(visits.buyers)}
+          note={`${pct(visits.buyers / visits.total)} ของสมาชิก`}
+        />
+        <StatCard
+          label="สมัครแล้วยังไม่เคยซื้อ"
+          value={formatCount(neverBought)}
+          note={`${pct(neverBought / visits.total)} ของสมาชิก · ถ้าคิดยอดต่อสมาชิก ควรหารด้วยคนที่เคยซื้อ`}
+        />
+        <StatCard
+          label="บิลที่เป็นของสมาชิก"
+          value={pct(billShare.memberBills / billShare.bills)}
+          note={`${formatCount(billShare.memberBills)} จาก ${formatCount(billShare.bills)} บิล`}
+        />
+      </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <AgeChart customers={customers} />
         <MemberShareChart sales={sales} />
         <NewMembersChart customers={customers} dataEnd={joinedEnd} />
-        <VisitsChart customers={customers} sales={sales} />
+        <VisitsChart visits={visits} />
       </div>
     </div>
   )
