@@ -170,7 +170,7 @@ function LiveTabInner() {
               <span className={`inline-block h-2 w-2 rounded-full ${status === "live" ? "animate-pulse bg-accent" : status === "error" ? "bg-danger" : "bg-line"}`} />
               Live · {projectId}
             </p>
-            <h1 className="mt-1 text-2xl font-light tracking-tight text-ink sm:text-3xl">ยอดขายสด</h1>
+            <h1 className="mt-1 text-2xl font-light tracking-tight text-ink sm:text-3xl">ยอดขาย Real Time</h1>
           </div>
           <p className="rounded-full border border-line bg-card px-3 py-1 text-xs text-muted sm:text-sm">
             {isToday ? formatThaiShortDate(end) : `${formatThaiShortDate(start)} – ${formatThaiShortDate(end)}`}

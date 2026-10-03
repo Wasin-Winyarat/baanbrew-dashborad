@@ -13,7 +13,7 @@ const LiveTab = lazy(() => import('./lab3/LiveTab.jsx'))
 const TABS = [
   { id: 'overview', label: 'ภาพรวม' },
   { id: 'customers', label: 'ลูกค้า' },
-  { id: 'live', label: 'ยอดขายสด' },
+  { id: 'live', label: 'ยอดขาย Real Time' },
   { id: 'lab2', label: 'Lab 2.2 · ซ่อมกราฟ' },
 ]
 
@@ -73,7 +73,7 @@ function Root() {
               <p className="text-[11px] uppercase tracking-[0.2em] text-muted">baan brew</p>
             </div>
           </div>
-          <nav className="-mx-1 flex max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-card/70 p-1">
+          <nav className="-mx-1 flex max-w-full gap-1 overflow-x-auto rounded-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border border-line bg-card/70 p-1">
             {TABS.map((t) => (
               <button
                 key={t.id}

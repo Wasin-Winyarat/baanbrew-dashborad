@@ -157,7 +157,7 @@ describe('prepareRows และ dailyRevenue (Lab 2.2)', () => {
   })
 })
 
-describe('hourlyRevenue (หน้ายอดขายสด)', () => {
+describe('hourlyRevenue (หน้ายอดขาย Real Time)', () => {
   it('รวมยอดต่อชั่วโมง เรียงตามชั่วโมง และเติม 0 ให้ชั่วโมงที่ไม่มียอดขาย', () => {
     // sample: 09:15 = 165 · 23:59 = 150 · 07:00 = 105
     const out = hourlyRevenue(prepareRows(sample))
