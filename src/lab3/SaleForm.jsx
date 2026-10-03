@@ -151,7 +151,7 @@ export default function SaleForm({ products, productsError, uid }) {
       <button
         type="submit"
         disabled={saving || products.length === 0}
-        className="h-11 w-full rounded-xl bg-sage-ink text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        className="h-11 w-full rounded-xl bg-brand-strong text-sm font-medium text-white shadow-[0_6px_16px_-6px_rgba(185,83,28,0.55)] transition hover:brightness-110 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
       >
         {saving ? "กำลังบันทึก…" : "บันทึกยอดขาย"}
       </button>
@@ -159,7 +159,7 @@ export default function SaleForm({ products, productsError, uid }) {
       {result && (
         <p
           role={result.ok ? "status" : "alert"}
-          className={`rounded-xl px-3 py-2 text-sm ${result.ok ? "bg-sage text-sage-ink" : "bg-blush text-blush-ink"}`}
+          className={`rounded-xl px-3 py-2 text-sm ${result.ok ? "bg-brand text-brand-ink" : "bg-blush text-blush-ink"}`}
         >
           {result.ok ? "✅ " : "❌ "}
           {result.text}

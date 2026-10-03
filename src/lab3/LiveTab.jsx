@@ -19,7 +19,9 @@ import {
   computeBranchSales, computeKpis, dailyRevenue, formatBaht, formatCount, formatShortBaht,
   formatThaiShortDate, hourlyRevenue, prepareRows,
 } from "../lib/metrics.js";
-import { AXIS_COLOR, CARD_CLASS, CURSOR_FILL, GRID_COLOR, LABEL_COLOR, SERIES_COLOR, TOOLTIP_STYLE } from "../theme.js";
+import {
+  AXIS_COLOR, CARD_CLASS, CARD_COLOR, CURSOR_FILL, GRID_COLOR, INK_COLOR, LABEL_COLOR, SERIES_COLOR, TOOLTIP_STYLE,
+} from "../theme.js";
 
 const RANGES = [
   { id: "today", label: "วันนี้", days: 1 },
@@ -43,7 +45,7 @@ const tooltipProps = (labelFormatter) => ({
   labelFormatter,
   contentStyle: TOOLTIP_STYLE,
   labelStyle: { color: LABEL_COLOR },
-  itemStyle: { color: "#3a3530" },
+  itemStyle: { color: INK_COLOR },
 });
 
 function Segmented({ options, value, onChange }) {
@@ -56,7 +58,7 @@ function Segmented({ options, value, onChange }) {
           onClick={() => onChange(o.id)}
           aria-pressed={value === o.id}
           className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-            value === o.id ? "bg-sage font-medium text-sage-ink" : "text-muted hover:text-ink"
+            value === o.id ? "bg-brand font-medium text-brand-ink" : "text-muted hover:text-ink"
           }`}
         >
           {o.label}
@@ -168,7 +170,7 @@ function LiveTabInner({ user }) {
       <div className="mx-auto max-w-6xl space-y-4 sm:space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
           <div>
-            <p className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted">
+            <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.25em] text-brand-strong">
               <span className={`inline-block h-2 w-2 rounded-full ${status === "live" ? "animate-pulse bg-accent" : status === "error" ? "bg-danger" : "bg-line"}`} />
               Live · {projectId}
             </p>
@@ -206,7 +208,7 @@ function LiveTabInner({ user }) {
         {status === "live" && (
           <>
             <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-              <KpiCard label="ยอดขายรวม" value={formatBaht(kpis.totalRevenue)} icon="revenue" tone="sage" />
+              <KpiCard label="ยอดขายรวม" value={formatBaht(kpis.totalRevenue)} icon="revenue" tone="brand" />
               <KpiCard label="จำนวนบิล" value={formatCount(kpis.billCount)} icon="bills" tone="mist" />
               <KpiCard label="ยอดเฉลี่ยต่อบิล" value={formatBaht(kpis.avgPerBill)} icon="avg" tone="oat" />
               <KpiCard label="ลูกค้าสมาชิก (ไม่ซ้ำ)" value={formatCount(kpis.uniqueMembers)} icon="members" tone="blush" />
@@ -235,7 +237,7 @@ function LiveTabInner({ user }) {
                           <XAxis dataKey="date" tickFormatter={formatThaiShortDate} tick={{ fontSize: 12, fill: AXIS_COLOR }} tickLine={false} axisLine={{ stroke: GRID_COLOR }} minTickGap={24} />
                           <YAxis tickFormatter={formatShortBaht} tick={{ fontSize: 12, fill: AXIS_COLOR }} tickLine={false} axisLine={false} width={52} />
                           <Tooltip {...tooltipProps(formatThaiShortDate)} cursor={{ stroke: GRID_COLOR }} />
-                          <Line type="monotone" dataKey="revenue" stroke={SERIES_COLOR} strokeWidth={2.5} dot={series.length <= 7 ? { r: 3, fill: SERIES_COLOR, strokeWidth: 0 } : false} activeDot={{ r: 5, stroke: "#fffdf8", strokeWidth: 2 }} isAnimationActive={false} />
+                          <Line type="monotone" dataKey="revenue" stroke={SERIES_COLOR} strokeWidth={2.5} dot={series.length <= 7 ? { r: 3, fill: SERIES_COLOR, strokeWidth: 0 } : false} activeDot={{ r: 5, stroke: CARD_COLOR, strokeWidth: 2 }} isAnimationActive={false} />
                         </LineChart>
                       )}
                     </ResponsiveContainer>
@@ -289,7 +291,7 @@ function LiveTabInner({ user }) {
                       <tr><td colSpan={6} className="px-6 py-6 text-center text-muted">ยังไม่มีรายการในช่วงนี้</td></tr>
                     )}
                     {latest.map((r) => (
-                      <tr key={r.id} className={`border-b border-line/60 transition-colors duration-700 last:border-0 ${fresh.has(r.id) ? "bg-sage" : ""}`}>
+                      <tr key={r.id} className={`border-b border-line/60 transition-colors duration-700 last:border-0 ${fresh.has(r.id) ? "bg-brand" : ""}`}>
                         <td className="whitespace-nowrap px-4 py-2.5 tabular-nums text-muted sm:px-6">
                           {isToday ? timeOf(r.datetime) : `${formatThaiShortDate(r.date)} ${timeOf(r.datetime)}`}
                         </td>
@@ -338,7 +340,7 @@ function UserChip({ user }) {
         // Google ไม่ให้โหลดรูปถ้าส่ง referrer ไปด้วย
         <img src={user.photoURL} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-7 w-7 rounded-full" />
       ) : (
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-sage text-xs font-medium text-sage-ink">{name.slice(0, 1).toUpperCase()}</span>
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-brand text-xs font-medium text-brand-ink">{name.slice(0, 1).toUpperCase()}</span>
       )}
       <span className="max-w-[10rem] truncate text-sm text-ink" title={user.email ?? undefined}>{name}</span>
       <button
@@ -370,7 +372,7 @@ function SignInCard() {
   return (
     <div className="px-4 py-10 sm:px-6 sm:py-16">
       <div className={`${CARD_CLASS} mx-auto max-w-md p-6 text-center sm:p-8`}>
-        <p className="text-xs uppercase tracking-[0.25em] text-muted">Live · {projectId}</p>
+        <p className="text-xs font-medium uppercase tracking-[0.25em] text-brand-strong">Live · {projectId}</p>
         <h1 className="mt-2 text-2xl font-light tracking-tight text-ink">ยอดขาย Real Time</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted">
           ข้อมูลยอดขายสำหรับพนักงานเท่านั้น เข้าสู่ระบบด้วยบัญชี Google เพื่อดูยอดขายและบันทึกการขาย

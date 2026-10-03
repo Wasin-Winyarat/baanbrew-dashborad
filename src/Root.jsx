@@ -65,14 +65,16 @@ function Root() {
   }
 
   return (
-    <div className="min-h-screen bg-paper">
-      <header className="sticky top-0 z-10 border-b border-line bg-paper/85 backdrop-blur-md">
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-10 border-b border-line bg-paper/80 backdrop-blur-md">
+        {/* Thin brand stripe across the very top */}
+        <div className="h-1 bg-gradient-to-r from-[#f6a35f] via-accent to-[#f2c46d]" />
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <img src="/favicon.svg" alt="" className="h-8 w-8" />
+            <img src="/favicon.svg" alt="" className="h-9 w-9 drop-shadow-[0_4px_8px_rgba(232,116,44,0.35)]" />
             <div className="leading-tight">
-              <p className="text-[15px] font-semibold tracking-wide text-ink">บ้านบรู</p>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-muted">baan brew</p>
+              <p className="text-base font-semibold tracking-wide text-ink">บ้านบรู</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-brand-strong">baan brew · coffee</p>
             </div>
           </div>
           <nav className="-mx-1 flex max-w-full gap-1 overflow-x-auto rounded-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border border-line bg-card/70 p-1">
@@ -84,8 +86,8 @@ function Root() {
                 aria-current={tab === t.id ? 'page' : undefined}
                 className={`shrink-0 rounded-full px-4 py-1.5 text-sm transition-colors ${
                   tab === t.id
-                    ? 'bg-sage font-medium text-sage-ink'
-                    : 'text-muted hover:bg-paper hover:text-ink'
+                    ? 'bg-brand-strong font-medium text-white shadow-[0_4px_12px_-4px_rgba(185,83,28,0.6)]'
+                    : 'text-muted hover:bg-brand/60 hover:text-brand-ink'
                 }`}
               >
                 {t.label}

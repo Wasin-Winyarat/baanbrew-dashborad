@@ -1,35 +1,49 @@
 @import "tailwindcss";
 
-/* Muji modern pastel: unbleached-paper background, warm charcoal ink, hairline
-   borders, and soft pastel tints used only as decoration. Data colors live in
-   src/theme.js so the charts and the CSS stay in step. */
+/* Warm orange theme: cream paper background, warm charcoal ink, hairline
+   borders, and an orange brand colour. Soft tints label cards; they are
+   decoration, not data. Data colours live in src/theme.js so the charts and
+   the CSS stay in step. */
 @theme {
   --font-sans: "IBM Plex Sans Thai", "Noto Sans Thai", ui-sans-serif, system-ui, sans-serif;
 
-  --color-paper: #f4f0e8;
-  --color-card: #fffdf8;
-  --color-ink: #3a3530;
-  --color-muted: #857c72;
-  --color-line: #e6dfd3;
-  --color-accent: #76937f;
-  --color-danger: #b5655a;
+  --color-paper: #fbf4ec;
+  --color-card: #fffcf8;
+  --color-ink: #3b2c22;
+  --color-muted: #8a7566;
+  --color-line: #f0e1d1;
+  --color-danger: #b84a3a;
 
-  --color-sage: #dde6d9;
-  --color-sage-ink: #5f7d68;
-  --color-mist: #dde5ec;
-  --color-mist-ink: #5b7488;
-  --color-blush: #f2dfd7;
-  --color-blush-ink: #a26a5a;
-  --color-oat: #efe5d2;
-  --color-oat-ink: #8f7650;
+  /* Brand orange: accent for charts/focus, strong for buttons and text on
+     white (≥4.5:1), soft + ink for tinted pills (≥4.5:1). */
+  --color-accent: #e8742c;
+  --color-brand-strong: #b9531c;
+  --color-brand: #fde3cf;
+  --color-brand-ink: #9a4416;
+
+  --color-mist: #dcecea;
+  --color-mist-ink: #3f6e6a;
+  --color-blush: #fbdcd6;
+  --color-blush-ink: #a0463a;
+  --color-oat: #fcefc6;
+  --color-oat-ink: #85600f;
 }
 
 @layer base {
   body {
     @apply bg-paper font-sans text-ink antialiased;
+    /* A soft orange glow behind the header so the page feels warm, not flat. */
+    background-image:
+      radial-gradient(60rem 28rem at 8% -6rem, rgb(253 214 182 / 0.55), transparent 70%),
+      radial-gradient(48rem 24rem at 100% -4rem, rgb(252 236 198 / 0.6), transparent 70%);
+    background-repeat: no-repeat;
   }
   input[type="date"]::-webkit-calendar-picker-indicator {
     opacity: 0.45;
     cursor: pointer;
+  }
+  ::selection {
+    background: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }

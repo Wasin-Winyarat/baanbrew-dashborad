@@ -26,6 +26,7 @@ import {
 import {
   AXIS_COLOR,
   CARD_CLASS,
+  CARD_COLOR,
   CURSOR_FILL,
   GRID_COLOR,
   LABEL_COLOR,
@@ -47,7 +48,7 @@ const compactNumber = new Intl.NumberFormat('en-US', {
 const formatAxisNumber = (v) => compactNumber.format(v)
 
 const INPUT_CLASS =
-  'h-10 w-full rounded-xl border border-line bg-paper/60 px-3 text-sm text-ink transition-colors hover:border-[#d6cdbf] focus:border-accent focus:bg-card focus:outline-none focus:ring-4 focus:ring-accent/15'
+  'h-10 w-full rounded-xl border border-line bg-paper/60 px-3 text-sm text-ink transition-colors hover:border-accent/40 focus:border-accent focus:bg-card focus:outline-none focus:ring-4 focus:ring-accent/15'
 
 function FilterField({ label, children }) {
   return (
@@ -173,7 +174,7 @@ function App({ rows }) {
       <div className="mx-auto max-w-6xl space-y-4 sm:space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-muted">Sales overview</p>
+            <p className="text-xs font-medium uppercase tracking-[0.25em] text-brand-strong">Sales overview</p>
             <h1 className="mt-1 text-2xl font-light tracking-tight text-ink sm:text-3xl">
               ภาพรวมยอดขาย
             </h1>
@@ -249,7 +250,7 @@ function App({ rows }) {
         ) : (
         <>
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-          <KpiCard label="ยอดขายรวม" value={formatBaht(kpis.totalRevenue)} icon="revenue" tone="sage" />
+          <KpiCard label="ยอดขายรวม" value={formatBaht(kpis.totalRevenue)} icon="revenue" tone="brand" />
           <KpiCard label="จำนวนบิล" value={formatCount(kpis.billCount)} icon="bills" tone="mist" />
           <KpiCard
             label="ยอดเฉลี่ยต่อบิล"
@@ -315,7 +316,7 @@ function App({ rows }) {
                 stroke={SERIES_COLOR}
                 strokeWidth={2.5}
                 dot={false}
-                activeDot={{ r: 5, stroke: '#fffdf8', strokeWidth: 2 }}
+                activeDot={{ r: 5, stroke: CARD_COLOR, strokeWidth: 2 }}
                 isAnimationActive={false}
               />
             </LineChart>

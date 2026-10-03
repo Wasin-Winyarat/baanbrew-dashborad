@@ -10,7 +10,7 @@ const ICONS = {
 
 // Each KPI gets its own pastel tile; the tint labels the card, it is not data.
 const TONES = {
-  sage: 'bg-sage text-sage-ink',
+  brand: 'bg-brand text-brand-ink',
   mist: 'bg-mist text-mist-ink',
   blush: 'bg-blush text-blush-ink',
   oat: 'bg-oat text-oat-ink',
@@ -19,7 +19,7 @@ const TONES = {
 /** One headline number. Shared by the overview tab and the live (Lab 3.2) tab. */
 export default function KpiCard({ label, value, icon, tone }) {
   return (
-    <div className={`${CARD_CLASS} min-w-0 p-4 sm:p-5`}>
+    <div className={`${CARD_CLASS} min-w-0 p-4 transition duration-200 hover:-translate-y-0.5 hover:border-accent/40 sm:p-5`}>
       <div className="flex items-center gap-2.5">
         <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${TONES[tone]}`}>
           <svg

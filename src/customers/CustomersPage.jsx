@@ -26,6 +26,7 @@ import {
   CARD_CLASS,
   CURSOR_FILL,
   GRID_COLOR,
+  INK_COLOR,
   LABEL_COLOR,
   SERIES_COLOR,
   TOOLTIP_STYLE,
@@ -49,12 +50,12 @@ const tooltipProps = (label, fmt = formatCount) => ({
   formatter: (v) => [fmt(v), label],
   contentStyle: TOOLTIP_STYLE,
   labelStyle: { color: LABEL_COLOR },
-  itemStyle: { color: '#3a3530' },
+  itemStyle: { color: INK_COLOR },
   cursor: { fill: CURSOR_FILL },
 })
 
 // แถบสีพาสเทลด้านบนการ์ด ใช้แยกการ์ดให้ดูง่าย ไม่ได้สื่อความหมายของข้อมูล
-const TONES = { sage: 'bg-sage', mist: 'bg-mist', blush: 'bg-blush', oat: 'bg-oat' }
+const TONES = { brand: 'bg-brand', mist: 'bg-mist', blush: 'bg-blush', oat: 'bg-oat' }
 
 /** ตัวเลขสรุปบนสุดของหน้า ใช้หน้าตาเดียวกับ KpiCard ในหน้าภาพรวม และมีบรรทัดอธิบายเสริมได้ */
 function StatCard({ label, value, note, tone }) {
@@ -223,7 +224,7 @@ export default function CustomersPage({ customers, sales }) {
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-6 sm:space-y-6 sm:px-6 sm:py-10">
       <div>
-        <p className="text-xs uppercase tracking-[0.25em] text-muted">Members</p>
+        <p className="text-xs font-medium uppercase tracking-[0.25em] text-brand-strong">Members</p>
         <h1 className="mt-1 text-2xl font-light tracking-tight text-ink sm:text-3xl">ลูกค้าสมาชิก</h1>
         <p className="mt-2 text-sm text-muted">
           สมาชิกทั้งหมด {formatCount(customers.length)} คน (สมัครถึง {formatThaiShortDate(joinedEnd)})
@@ -231,7 +232,7 @@ export default function CustomersPage({ customers, sales }) {
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-        <StatCard tone="sage" label="สมาชิกทั้งหมด" value={formatCount(visits.total)} />
+        <StatCard tone="brand" label="สมาชิกทั้งหมด" value={formatCount(visits.total)} />
         <StatCard
           tone="mist"
           label="เคยซื้ออย่างน้อย 1 บิล"
