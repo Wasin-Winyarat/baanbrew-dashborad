@@ -7,6 +7,7 @@ import { prepareRows } from './lib/metrics'
 
 // Firebase is only needed on the live tab, so it loads in its own chunk.
 const LiveTab = lazy(() => import('./lab3/LiveTab.jsx'))
+const RulesTab = lazy(() => import('./lab3/RulesTab.jsx'))
 
 // Loads the CSVs once and switches between the tabs. The tab is kept in the
 // URL hash (#customers, #lab2) so it survives a refresh and can be linked to.
@@ -15,6 +16,7 @@ const TABS = [
   { id: 'customers', label: 'ลูกค้า' },
   { id: 'live', label: 'ยอดขาย Real Time' },
   { id: 'lab2', label: 'Lab 2.2 · ซ่อมกราฟ' },
+  { id: 'rules', label: 'ทดสอบ Rules' },
 ]
 
 async function loadCsv(url) {
@@ -96,6 +98,10 @@ function Root() {
       {tab === 'live' ? (
         <Suspense fallback={<p className="p-10 text-center text-muted">กำลังโหลด...</p>}>
           <LiveTab />
+        </Suspense>
+      ) : tab === 'rules' ? (
+        <Suspense fallback={<p className="p-10 text-center text-muted">กำลังโหลด...</p>}>
+          <RulesTab />
         </Suspense>
       ) : error ? (
         <p className="p-6 text-center text-danger">{error}</p>

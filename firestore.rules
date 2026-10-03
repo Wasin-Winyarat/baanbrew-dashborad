@@ -1,0 +1,129 @@
+rules_version = '2';
+
+// Lab 3.3 · Security Rules ของบ้านบรู
+// หลักคิด: หน้าเว็บ (web config) ทุกคนมองเห็นได้ ความปลอดภัยจริงจึงอยู่ที่ไฟล์นี้
+// - ทุกอย่างต้องล็อกอินก่อน
+// - เมนูและสาขาแก้จากเว็บไม่ได้ (แก้ได้เฉพาะ npm run seed ซึ่งใช้ service account และไม่ผ่าน rules)
+// - ยอดขายเพิ่มได้อย่างเดียว ห้ามแก้ห้ามลบ และต้องหน้าตาเหมือนที่ buildSale() ใน src/lab3/saleModel.js สร้างทุกฟิลด์
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ล็อกอินแล้วหรือยัง (request.auth เป็น null ถ้ายังไม่ล็อกอิน)
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // ---------- เมนูและสาขา ----------
+    // อ่านได้เมื่อล็อกอิน (ฟอร์มต้องใช้ราคาเมนู) แต่เขียนจากเว็บไม่ได้เลย
+    // กันการโจมตี "แก้ราคาเมนูจากหน้าเว็บ" เช่นแก้ลาเต้เย็นเป็น ฿1 แล้วบันทึกยอดขายตามราคานั้น
+    match /products/{productId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /branches/{branchId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // ---------- ยอดขาย ----------
+    match /sales/{saleId} {
+      // อ่านได้เมื่อล็อกอิน (Dashboard ใช้ onSnapshot)
+      allow read: if signedIn();
+
+      // เพิ่มได้เมื่อล็อกอิน และเอกสารต้องผ่าน validSale() ทุกข้อ
+      allow create: if signedIn() && validSale(request.resource.data);
+
+      // ยอดขายที่บันทึกแล้วเป็นหลักฐานทางบัญชี ห้ามแก้และห้ามลบจากเว็บ
+      // (ถ้าบันทึกผิดในงานจริง ควรบันทึกรายการคืนเงินเพิ่ม ไม่ใช่แก้ของเดิม)
+      allow update, delete: if false;
+
+      // ตรวจเอกสารยอดขายใหม่ 1 รายการ · d = ข้อมูลที่กำลังจะถูกเขียน
+      function validSale(d) {
+        return hasExactFields(d)
+          && validOwner(d)
+          && validTime(d)
+          && validChoices(d)
+          && validNumbers(d)
+          && validPrice(d)
+          && validCustomer(d);
+      }
+
+      // 1) ฟิลด์ครบและไม่มีฟิลด์เกิน
+      //    hasAll = ต้องมีครบทุกฟิลด์ที่ buildSale() สร้าง + created_at
+      //    hasOnly = ห้ามมีฟิลด์อื่นนอกจากนี้ (กันการแอบเพิ่มฟิลด์ เช่น discount)
+      function hasExactFields(d) {
+        let fields = ['order_id', 'datetime', 'date', 'hour', 'branch', 'product_id',
+                      'qty', 'unit_price', 'revenue', 'customer_id', 'payment_method',
+                      'channel', 'source', 'created_by', 'created_at'];
+        return d.keys().hasAll(fields) && d.keys().hasOnly(fields);
+      }
+
+      // 2) ที่มาและผู้บันทึก
+      //    source ต้องเป็น "web" (ข้อมูล "import" มาจาก npm run seed เท่านั้น)
+      //    created_by ต้องเป็น uid ของคนที่ล็อกอินอยู่จริง กันการปลอมตัวเป็นผู้ใช้อื่น
+      function validOwner(d) {
+        return d.source == 'web'
+          && d.created_by == request.auth.uid
+          && d.order_id is string;
+      }
+
+      // 3) เวลา
+      //    created_at ต้องเท่ากับเวลาของเซิร์ฟเวอร์ตอนเขียน (มาจาก serverTimestamp())
+      //    ห้ามส่งเวลาเองจากเครื่อง ซึ่งปลอมย้อนหลังหรือล่วงหน้าได้
+      //    date ต้องเป็น YYYY-MM-DD และ datetime ต้องเป็น YYYY-MM-DDTHH:MM:SS+07:00 (เวลาไทย)
+      //    hour เป็นจำนวนเต็ม 0–23
+      //    และทั้งสามต้องตรงกันเอง: date = 10 ตัวแรกของ datetime, hour = ชั่วโมงใน datetime
+      function validTime(d) {
+        return d.created_at == request.time
+          && d.date is string
+          && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && d.datetime is string
+          && d.datetime.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[+]07:00$')
+          && d.hour is int
+          && d.hour >= 0 && d.hour <= 23
+          && d.datetime[0:10] == d.date
+          && int(d.datetime[11:13]) == d.hour;
+      }
+
+      // 4) ตัวเลือกที่มีอยู่จริง
+      //    branch ต้องเป็น 1 ใน 5 สาขา และ payment_method เป็น 1 ใน 5 แบบ (ตรงกับ BRANCHES, PAYMENTS)
+      //    channel คำนวณจากวิธีชำระเงินเหมือน buildSale(): LINE MAN / Grab = เดลิเวอรี นอกนั้น = หน้าร้าน
+      function validChoices(d) {
+        return d.branch in ['สยาม', 'สีลม', 'อารีย์', 'บางนา', 'มหาวิทยาลัย']
+          && d.payment_method in ['QR พร้อมเพย์', 'บัตรเครดิต', 'เงินสด', 'LINE MAN', 'Grab']
+          && d.channel == (d.payment_method in ['LINE MAN', 'Grab'] ? 'เดลิเวอรี' : 'หน้าร้าน');
+      }
+
+      // 5) จำนวนและยอดเงิน
+      //    qty เป็นจำนวนเต็ม 1–20 (กันจำนวนติดลบ จำนวนทศนิยม หรือสั่งทีละมากผิดปกติ)
+      //    revenue ต้องเท่ากับ qty × unit_price พอดี (กันการใส่ยอดรวมเอง)
+      function validNumbers(d) {
+        return d.qty is int
+          && d.qty >= 1 && d.qty <= 20
+          && d.unit_price is number
+          && d.revenue is number
+          && d.revenue == d.qty * d.unit_price;
+      }
+
+      // 6) ราคาต่อหน่วยต้องตรงกับราคาเมนูในฐานข้อมูล
+      //    ใช้ get() อ่าน products/{product_id} จริง (นับเป็นการอ่าน 1 ครั้งต่อการบันทึก)
+      //    กันการตั้งราคาเองจากหน้าเว็บ เช่น ลาเต้เย็น ฿1 · exists() ก่อนเพื่อปฏิเสธเมนูที่ไม่มีจริง
+      function validPrice(d) {
+        let path = /databases/$(database)/documents/products/$(d.product_id);
+        return d.product_id is string
+          && exists(path)
+          && d.unit_price == get(path).data.price;
+      }
+
+      // 7) รหัสสมาชิก
+      //    ไม่ใช่สมาชิก = null (เหมือนข้อมูลที่ import) ถ้าเป็นสมาชิกต้องเป็น C ตามด้วยตัวเลข 5 หลัก
+      //    buildSale() แปลงเป็นตัวพิมพ์ใหญ่ให้แล้ว จึงรับเฉพาะ C ตัวใหญ่
+      function validCustomer(d) {
+        return d.customer_id == null
+          || (d.customer_id is string && d.customer_id.matches('^C[0-9]{5}$'));
+      }
+    }
+
+    // collection อื่นที่ไม่ได้เขียนไว้ข้างบน: ปิดทั้งหมดเป็นค่าเริ่มต้น
+  }
+}
