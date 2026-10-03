@@ -167,6 +167,41 @@ export function computeBranchSales(rows) {
 }
 
 /**
+ * Best-selling products by revenue, highest first — the overview tab's
+ * "top menu" card. Names and categories come from products.csv; an id that
+ * is missing from the menu falls back to the id itself so its sales still
+ * count. `share` is the product's part of the revenue of all `rows`, not
+ * only of the products returned.
+ * @param {Array<object>} rows
+ * @param {Array<{product_id: string, product_name: string, category: string}>} [products]
+ * @param {number} [limit=5]
+ * @returns {Array<{productId: string, name: string, category: string, revenue: number, qty: number, share: number}>}
+ */
+export function computeTopProducts(rows, products = [], limit = 5) {
+  const menu = new Map(products.map((p) => [p.product_id, p]))
+  const byProduct = new Map()
+  let total = 0
+  for (const row of rows) {
+    const revenue = rowRevenue(row)
+    const current = byProduct.get(row.product_id) || { revenue: 0, qty: 0 }
+    current.revenue += revenue
+    current.qty += Number(row.qty) || 0
+    byProduct.set(row.product_id, current)
+    total += revenue
+  }
+  return Array.from(byProduct, ([productId, t]) => ({
+    productId,
+    name: menu.get(productId)?.product_name || productId,
+    category: menu.get(productId)?.category || '',
+    revenue: t.revenue,
+    qty: t.qty,
+    share: total > 0 ? t.revenue / total : 0,
+  }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, limit)
+}
+
+/**
  * Formats a number of baht with thousands separators and a "฿" suffix,
  * e.g. formatBaht(123456.7) -> "฿123,457".
  * @param {number} value

@@ -17,6 +17,7 @@ import {
   computeBranchSales,
   computeDailySales,
   computeKpis,
+  computeTopProducts,
   dateKey,
   filterRows,
   formatBaht,
@@ -33,6 +34,7 @@ import {
   SERIES_COLOR,
 } from './theme'
 import KpiCard from './components/KpiCard.jsx'
+import TopProducts from './components/TopProducts.jsx'
 
 // Single accent hue for both charts — one measure (revenue), so identity
 // color-per-series would be noise, not signal. See dataviz skill.
@@ -111,7 +113,7 @@ function CustomTooltip({ active, payload, label, labelPrefix = '', labelFormatte
 
 // The overview tab. sales.csv is loaded once in Root.jsx and passed in, so
 // the Lab 2.2 tab can share the same rows.
-function App({ rows }) {
+function App({ rows, products }) {
   const [branch, setBranch] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
@@ -153,6 +155,11 @@ function App({ rows }) {
     [filteredRows],
   )
   const branchSales = useMemo(() => computeBranchSales(dateRows), [dateRows])
+  // Top menu follows every filter, like the KPIs.
+  const topProducts = useMemo(
+    () => computeTopProducts(filteredRows, products ?? [], 5),
+    [filteredRows, products],
+  )
 
   const isFiltered = branch !== '' || from !== '' || to !== ''
   const resetFilters = () => {
@@ -323,6 +330,7 @@ function App({ rows }) {
           </ResponsiveContainer>
         </ChartCard>
 
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         <ChartCard
           title="ยอดขายแยกสาขา"
           subtitle={branch ? `เทียบ ${branch} กับสาขาอื่น · เรียงจากมากไปน้อย` : 'เรียงจากมากไปน้อย'}
@@ -373,6 +381,12 @@ function App({ rows }) {
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
+
+        <TopProducts
+          items={topProducts}
+          subtitle={`${branch || 'ทุกสาขา'} · ${formatThaiShortDate(from || dataRange.min)} – ${formatThaiShortDate(to || dataRange.max)}`}
+        />
+        </div>
         </>
         )}
       </div>

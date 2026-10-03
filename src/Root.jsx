@@ -110,7 +110,7 @@ function Root() {
       ) : !rows ? (
         <p className="p-10 text-center text-muted">กำลังโหลดข้อมูล...</p>
       ) : tab === 'overview' ? (
-        <App rows={rows} />
+        <App rows={rows} products={products} />
       ) : tab === 'customers' ? (
         <CustomersPage customers={customers} sales={rows} />
       ) : (

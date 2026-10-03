@@ -4,6 +4,7 @@ import {
   computeBranchSales,
   computeDailySales,
   computeKpis,
+  computeTopProducts,
   dailyRevenue,
   dateKey,
   filterRows,
@@ -142,6 +143,34 @@ describe('computeBranchSales', () => {
 
   it('แถวที่ไม่มีสาขาไปรวมไว้ที่ (ไม่ระบุสาขา)', () => {
     expect(computeBranchSales([row({ branch: '' })])).toEqual([{ branch: '(ไม่ระบุสาขา)', revenue: 50 }])
+  })
+})
+
+describe('computeTopProducts', () => {
+  const menu = [
+    { product_id: 'P001', product_name: 'อเมริกาโน่ร้อน', category: 'กาแฟ' },
+    { product_id: 'P002', product_name: 'ลาเต้เย็น', category: 'กาแฟ' },
+    { product_id: 'P003', product_name: 'ครัวซองต์', category: 'เบเกอรี่' },
+  ]
+  // sample: P001 = 120 + 150 + 80 = 350 (6 ชิ้น) · P002 = 45 (1) · P003 = 25 (1) · รวม 420
+
+  it('เรียงตามยอดขายมากไปน้อย รวมจำนวนชิ้น และใส่ชื่อกับหมวดจากเมนู', () => {
+    expect(computeTopProducts(sample, menu)).toEqual([
+      { productId: 'P001', name: 'อเมริกาโน่ร้อน', category: 'กาแฟ', revenue: 350, qty: 6, share: 350 / 420 },
+      { productId: 'P002', name: 'ลาเต้เย็น', category: 'กาแฟ', revenue: 45, qty: 1, share: 45 / 420 },
+      { productId: 'P003', name: 'ครัวซองต์', category: 'เบเกอรี่', revenue: 25, qty: 1, share: 25 / 420 },
+    ])
+  })
+
+  it('ตัดตาม limit แต่สัดส่วนยังเทียบกับยอดขายทั้งหมด', () => {
+    const top = computeTopProducts(sample, menu, 1)
+    expect(top).toHaveLength(1)
+    expect(top[0].share).toBeCloseTo(350 / 420)
+  })
+
+  it('เมนูที่ไม่อยู่ใน products ใช้รหัสแทนชื่อ และไม่มีข้อมูลได้อาร์เรย์ว่าง', () => {
+    expect(computeTopProducts([row({ product_id: 'P999' })])[0]).toMatchObject({ productId: 'P999', name: 'P999', category: '' })
+    expect(computeTopProducts([], menu)).toEqual([])
   })
 })
 
