@@ -8,8 +8,6 @@ import { BRANCHES, MAX_QTY, PAYMENTS, buildSale, validateSaleForm } from "./sale
 import { formatBaht } from "../lib/metrics.js";
 import { CARD_CLASS } from "../theme.js";
 
-// Lab 3.3 จะเปลี่ยนเป็น uid ของผู้ใช้ที่ล็อกอิน
-const UID = "anonymous";
 const EMPTY = { branch: "", product_id: "", qty: "1", payment_method: "", customer_id: "" };
 
 const INPUT =
@@ -30,7 +28,8 @@ function Field({ label, hint, error, children }) {
   );
 }
 
-export default function SaleForm({ products, productsError }) {
+/** uid = ผู้ใช้ที่ล็อกอินอยู่ (LiveTab ส่งมา) ใช้เป็น created_by ของเอกสาร */
+export default function SaleForm({ products, productsError, uid }) {
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -40,7 +39,7 @@ export default function SaleForm({ products, productsError }) {
   const product = products.find((p) => p.product_id === form.product_id);
   const check = useMemo(() => validateSaleForm(form, products), [form, products]);
   // ยอดรวมก่อนบันทึกใช้ buildSale ตัวเดียวกับตอนบันทึก ตัวเลขที่เห็นจึงตรงกับที่จะเขียนลง Firestore
-  const preview = product && !check.qty ? buildSale(form, product, { uid: UID }).data.revenue : null;
+  const preview = product && !check.qty ? buildSale(form, product, { uid }).data.revenue : null;
 
   const set = (name) => (e) => {
     const next = { ...form, [name]: e.target.value };
@@ -56,7 +55,7 @@ export default function SaleForm({ products, productsError }) {
     setErrors(check);
     if (Object.keys(check).length > 0) return;
 
-    const { id, data } = buildSale(form, product, { uid: UID });
+    const { id, data } = buildSale(form, product, { uid });
     setSaving(true);
     setResult(null);
     try {

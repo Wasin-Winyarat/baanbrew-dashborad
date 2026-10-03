@@ -2,12 +2,14 @@
 // ฟัง collection "sales" ด้วย onSnapshot เฉพาะช่วงวันที่ที่เลือก แล้วคำนวณด้วยฟังก์ชันเดิมใน lib/metrics.js
 // (ไม่มีสูตรคำนวณในไฟล์นี้) ตัวเลือกสาขากรองในเบราว์เซอร์ จึงไม่ต้องอ่าน Firestore ใหม่เมื่อเปลี่ยนสาขา
 // คอลัมน์ขวาเป็นฟอร์มบันทึกยอดขาย (SaleForm) ยอดที่บันทึกจะเด้งเข้ามาในตารางผ่าน onSnapshot เอง
+// ต้องล็อกอินด้วย Google ก่อน: Dashboard (และ onSnapshot) เริ่มทำงานเมื่อมีผู้ใช้แล้วเท่านั้น
 import { useEffect, useMemo, useRef, useState } from "react";
 import { collection, getDocs, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import {
   Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { db, projectId } from "./firebase.js";
+import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { auth, db, googleProvider, projectId } from "./firebase.js";
 import { addDays, todayBangkok } from "./time.js";
 import { BRANCHES } from "./saleModel.js";
 import SaleForm from "./SaleForm.jsx";
@@ -64,7 +66,7 @@ function Segmented({ options, value, onChange }) {
   );
 }
 
-function LiveTabInner() {
+function LiveTabInner({ user }) {
   const [rangeId, setRangeId] = useState("7d");
   const [branch, setBranch] = useState("");
   const [docs, setDocs] = useState([]);
@@ -172,10 +174,13 @@ function LiveTabInner() {
             </p>
             <h1 className="mt-1 text-2xl font-light tracking-tight text-ink sm:text-3xl">ยอดขาย Real Time</h1>
           </div>
-          <p className="rounded-full border border-line bg-card px-3 py-1 text-xs text-muted sm:text-sm">
-            {isToday ? formatThaiShortDate(end) : `${formatThaiShortDate(start)} – ${formatThaiShortDate(end)}`}
-            {" · "}อ่านไปแล้ว <span className="font-medium tabular-nums text-ink">{formatCount(reads)}</span> เอกสาร
-          </p>
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <UserChip user={user} />
+            <p className="rounded-full border border-line bg-card px-3 py-1 text-xs text-muted sm:text-sm">
+              {isToday ? formatThaiShortDate(end) : `${formatThaiShortDate(start)} – ${formatThaiShortDate(end)}`}
+              {" · "}อ่านไปแล้ว <span className="font-medium tabular-nums text-ink">{formatCount(reads)}</span> เอกสาร
+            </p>
+          </div>
         </div>
 
         <div className={`${CARD_CLASS} flex flex-wrap items-center gap-3 p-4 sm:p-5`}>
@@ -307,7 +312,7 @@ function LiveTabInner() {
         </div>
 
         <aside className="lg:sticky lg:top-24">
-          <SaleForm products={products} productsError={productsError} />
+          <SaleForm products={products} productsError={productsError} uid={user.uid} />
         </aside>
         </div>
       </div>
@@ -315,7 +320,94 @@ function LiveTabInner() {
   );
 }
 
+const AUTH_ERROR_TEXT = {
+  "auth/unauthorized-domain": "โดเมนนี้ยังไม่ได้รับอนุญาต เพิ่มโดเมนของเว็บใน Firebase Console → Authentication → Settings → Authorized domains",
+  "auth/operation-not-allowed": "ยังไม่ได้เปิดการล็อกอินด้วย Google เปิดได้ที่ Firebase Console → Authentication → Sign-in method → Google",
+  "auth/popup-blocked": "เบราว์เซอร์บล็อกหน้าต่างล็อกอิน อนุญาตป๊อปอัปสำหรับเว็บนี้แล้วกดปุ่มอีกครั้ง",
+  "auth/popup-closed-by-user": "ปิดหน้าต่างล็อกอินก่อนเสร็จ กดปุ่มอีกครั้งเพื่อเข้าสู่ระบบ",
+};
+const authErrorText = (err) => AUTH_ERROR_TEXT[err.code] ?? `เข้าสู่ระบบไม่สำเร็จ (${err.code ?? err.message})`;
+
+function UserChip({ user }) {
+  const name = user.displayName || user.email || "ผู้ใช้";
+  const [failed, setFailed] = useState(false);
+  const logout = () => signOut(auth).catch((err) => console.error(err));
+  return (
+    <div className="flex items-center gap-2 rounded-full border border-line bg-card py-1 pl-1 pr-1">
+      {user.photoURL && !failed ? (
+        // Google ไม่ให้โหลดรูปถ้าส่ง referrer ไปด้วย
+        <img src={user.photoURL} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-7 w-7 rounded-full" />
+      ) : (
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-sage text-xs font-medium text-sage-ink">{name.slice(0, 1).toUpperCase()}</span>
+      )}
+      <span className="max-w-[10rem] truncate text-sm text-ink" title={user.email ?? undefined}>{name}</span>
+      <button
+        type="button"
+        onClick={logout}
+        className="rounded-full px-3 py-1 text-xs text-muted transition-colors hover:bg-blush hover:text-blush-ink"
+      >
+        ออกจากระบบ
+      </button>
+    </div>
+  );
+}
+
+function SignInCard() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const login = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await signInWithPopup(auth, googleProvider);
+      // สำเร็จแล้ว onAuthStateChanged ใน AuthGate จะสลับไปแสดง Dashboard เอง
+    } catch (err) {
+      console.error(err);
+      setError(authErrorText(err));
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="px-4 py-10 sm:px-6 sm:py-16">
+      <div className={`${CARD_CLASS} mx-auto max-w-md p-6 text-center sm:p-8`}>
+        <p className="text-xs uppercase tracking-[0.25em] text-muted">Live · {projectId}</p>
+        <h1 className="mt-2 text-2xl font-light tracking-tight text-ink">ยอดขาย Real Time</h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted">
+          ข้อมูลยอดขายสำหรับพนักงานเท่านั้น เข้าสู่ระบบด้วยบัญชี Google เพื่อดูยอดขายและบันทึกการขาย
+        </p>
+        <button
+          type="button"
+          onClick={login}
+          disabled={busy}
+          className="mt-6 inline-flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-line bg-card text-sm font-medium text-ink transition-colors hover:bg-paper disabled:cursor-wait disabled:opacity-60"
+        >
+          <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+          </svg>
+          {busy ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบด้วย Google"}
+        </button>
+        {error && (
+          <p role="alert" className="mt-4 rounded-xl bg-blush/60 px-3 py-2 text-left text-sm text-blush-ink">❌ {error}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** ตรวจสถานะล็อกอินก่อน: undefined = กำลังตรวจ, null = ยังไม่ล็อกอิน */
+function AuthGate() {
+  const [user, setUser] = useState(undefined);
+  useEffect(() => onAuthStateChanged(auth, setUser), []);
+  if (user === undefined) return <p className="p-10 text-center text-muted">กำลังตรวจสอบการเข้าสู่ระบบ…</p>;
+  if (user === null) return <SignInCard />;
+  // key = uid: เปลี่ยนผู้ใช้แล้วเริ่ม Dashboard ใหม่ทั้งหมด (ตัวนับการอ่านและ listener ไม่ปนกัน)
+  return <LiveTabInner key={user.uid} user={user} />;
+}
+
 export default function LiveTab() {
   // ยังไม่ได้ตั้งค่า .env → firebase.js ให้ db = null
-  return db ? <LiveTabInner /> : <SetupGuide />;
+  return db ? <AuthGate /> : <SetupGuide />;
 }
