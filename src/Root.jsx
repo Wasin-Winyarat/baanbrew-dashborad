@@ -1,15 +1,19 @@
 import Papa from 'papaparse'
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import App from './App.jsx'
 import CustomersPage from './customers/CustomersPage.jsx'
 import Lab2Page from './lab2/Lab2Page.jsx'
 import { prepareRows } from './lib/metrics'
+
+// Firebase is only needed on the live tab, so it loads in its own chunk.
+const LiveTab = lazy(() => import('./lab3/LiveTab.jsx'))
 
 // Loads the CSVs once and switches between the tabs. The tab is kept in the
 // URL hash (#customers, #lab2) so it survives a refresh and can be linked to.
 const TABS = [
   { id: 'overview', label: 'ภาพรวม' },
   { id: 'customers', label: 'ลูกค้า' },
+  { id: 'live', label: 'ยอดขายสด' },
   { id: 'lab2', label: 'Lab 2.2 · ซ่อมกราฟ' },
 ]
 
@@ -89,7 +93,11 @@ function Root() {
         </div>
       </header>
 
-      {error ? (
+      {tab === 'live' ? (
+        <Suspense fallback={<p className="p-10 text-center text-muted">กำลังโหลด...</p>}>
+          <LiveTab />
+        </Suspense>
+      ) : error ? (
         <p className="p-6 text-center text-danger">{error}</p>
       ) : !rows ? (
         <p className="p-10 text-center text-muted">กำลังโหลดข้อมูล...</p>

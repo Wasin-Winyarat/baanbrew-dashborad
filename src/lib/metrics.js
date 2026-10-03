@@ -238,6 +238,26 @@ export function dailyRevenue(rows) {
 }
 
 /**
+ * Revenue per hour of the day for rows from prepareRows(), earliest hour
+ * first. Hours with no sales between the first and last busy hour are filled
+ * with 0, so the live tab's hourly bar chart shows a quiet hour as an empty
+ * slot instead of skipping it.
+ * @param {Array<{hour: number, revenue: number}>} rows
+ * @returns {Array<{hour: number, revenue: number}>}
+ */
+export function hourlyRevenue(rows) {
+  const byHour = new Map()
+  for (const row of rows) byHour.set(row.hour, (byHour.get(row.hour) || 0) + row.revenue)
+  if (byHour.size === 0) return []
+  const hours = Array.from(byHour.keys())
+  const result = []
+  for (let hour = Math.min(...hours); hour <= Math.max(...hours); hour++) {
+    result.push({ hour, revenue: byHour.get(hour) || 0 })
+  }
+  return result
+}
+
+/**
  * Short baht for chart axes, e.g. 1500 -> "฿1.5K", 1230027 -> "฿1.2M".
  * Keeps one decimal so neighbouring ticks (1,500 vs 2,000) never collapse
  * into the same label.

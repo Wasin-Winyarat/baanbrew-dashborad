@@ -11,6 +11,7 @@ import {
   formatCount,
   formatShortBaht,
   formatThaiShortDate,
+  hourlyRevenue,
   nextDateKey,
   prepareRows,
   rowRevenue,
@@ -153,6 +154,22 @@ describe('prepareRows และ dailyRevenue (Lab 2.2)', () => {
 
   it('dailyRevenue ไม่เติมวันที่ไม่มียอดขาย', () => {
     expect(dailyRevenue(prepareRows(sample)).map((d) => d.date)).toEqual(['2025-04-01', '2025-04-02', '2025-04-04'])
+  })
+})
+
+describe('hourlyRevenue (หน้ายอดขายสด)', () => {
+  it('รวมยอดต่อชั่วโมง เรียงตามชั่วโมง และเติม 0 ให้ชั่วโมงที่ไม่มียอดขาย', () => {
+    // sample: 09:15 = 165 · 23:59 = 150 · 07:00 = 105
+    const out = hourlyRevenue(prepareRows(sample))
+    expect(out[0]).toEqual({ hour: 7, revenue: 105 })
+    expect(out.find((h) => h.hour === 8)).toEqual({ hour: 8, revenue: 0 })
+    expect(out.find((h) => h.hour === 9)).toEqual({ hour: 9, revenue: 165 })
+    expect(out.at(-1)).toEqual({ hour: 23, revenue: 150 })
+    expect(out).toHaveLength(17)
+  })
+
+  it('ไม่มีข้อมูลได้อาร์เรย์ว่าง', () => {
+    expect(hourlyRevenue([])).toEqual([])
   })
 })
 
