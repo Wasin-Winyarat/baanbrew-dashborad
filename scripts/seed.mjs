@@ -17,7 +17,7 @@ const args = Object.fromEntries(
 );
 const DAYS = Number(args.days ?? 90);
 const FILE = args.file ?? "public/sales.csv";
-const DRY = Boolean(args["dry-run"]);
+const DRY = process.argv.includes("--dry-run");
 const SHIFT = !args["no-shift"];
 const WRITE_LIMIT = 18_000; // เผื่อจากโควตาฟรีรายวันของ Firestore (ตรวจตัวเลขล่าสุดในหน้า pricing)
 
