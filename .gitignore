@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets (Firebase service account, env vars) — never commit
+.env
+secrets/
+
+# Written by npm run seed
+import-summary.json
