@@ -23,15 +23,20 @@ import {
   formatCount,
   formatThaiShortDate,
 } from './lib/metrics'
+import {
+  AXIS_COLOR,
+  CARD_CLASS,
+  CURSOR_FILL,
+  GRID_COLOR,
+  LABEL_COLOR,
+  SERIES_COLOR,
+} from './theme'
 
 // Single accent hue for both charts — one measure (revenue), so identity
 // color-per-series would be noise, not signal. See dataviz skill.
 // In the daily chart the raw daily line is the same hue at low opacity so the
 // 7-day average reads as the main line and the daily values as background.
-const SERIES_COLOR = '#2a78d6'
 const DAILY_LINE_OPACITY = 0.3
-const GRID_COLOR = '#e1e0d9'
-const AXIS_COLOR = '#898781'
 
 // Y-axis ticks: short form ("12K") so the axis stays narrow on phones.
 const compactNumber = new Intl.NumberFormat('en-US', {
@@ -41,43 +46,78 @@ const compactNumber = new Intl.NumberFormat('en-US', {
 const formatAxisNumber = (v) => compactNumber.format(v)
 
 const INPUT_CLASS =
-  'h-9 w-full rounded-md border border-black/15 bg-white px-2 text-sm text-[#0b0b0b] focus:border-[#2a78d6] focus:outline-none focus:ring-2 focus:ring-[#2a78d6]/20'
+  'h-10 w-full rounded-xl border border-line bg-paper/60 px-3 text-sm text-ink transition-colors hover:border-[#d6cdbf] focus:border-accent focus:bg-card focus:outline-none focus:ring-4 focus:ring-accent/15'
 
 function FilterField({ label, children }) {
   return (
-    <label className="flex min-w-[9rem] flex-1 flex-col gap-1 sm:flex-none">
-      <span className="text-xs text-[#52514e]">{label}</span>
+    <label className="flex min-w-[9rem] flex-1 flex-col gap-1.5 sm:flex-none">
+      <span className="text-xs tracking-wide text-muted">{label}</span>
       {children}
     </label>
   )
 }
 
-function KpiCard({ label, value }) {
+// Small line icons for the KPI cards; decoration only, so aria-hidden.
+const ICONS = {
+  revenue: <path d="M4 17l5-5 4 3 7-8M15 7h5v5" />,
+  bills: <path d="M7 3h10v18l-2.5-1.5L12 21l-2.5-1.5L7 21zM10 8h4M10 12h4" />,
+  avg: <path d="M5 19L19 5M7 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />,
+  members: <path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20a6 6 0 0 1 12 0M16 5.5a3 3 0 0 1 0 5.5M18 14.5a5 5 0 0 1 3 5" />,
+}
+
+// Each KPI gets its own pastel tile; the tint labels the card, it is not data.
+const TONES = {
+  sage: 'bg-sage text-sage-ink',
+  mist: 'bg-mist text-mist-ink',
+  blush: 'bg-blush text-blush-ink',
+  oat: 'bg-oat text-oat-ink',
+}
+
+function KpiCard({ label, value, icon, tone }) {
   return (
-    <div className="min-w-0 rounded-lg border border-black/10 bg-white p-3 shadow-sm sm:p-4">
-      <p className="text-xs text-[#52514e] sm:text-sm">{label}</p>
-      <p className="mt-1 break-words text-lg font-semibold tabular-nums text-[#0b0b0b] sm:text-2xl">
+    <div className={`${CARD_CLASS} min-w-0 p-4 sm:p-5`}>
+      <div className="flex items-center gap-2.5">
+        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${TONES[tone]}`}>
+          <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {ICONS[icon]}
+          </svg>
+        </span>
+        <p className="text-xs leading-snug text-muted sm:text-sm">{label}</p>
+      </div>
+      <p className="mt-3 break-words text-xl font-medium tabular-nums tracking-tight text-ink sm:text-[1.75rem]">
         {value}
       </p>
     </div>
   )
 }
 
-function ChartCard({ title, legend, children }) {
+function ChartCard({ title, subtitle, legend, children }) {
   return (
-    <div className="rounded-lg border border-black/10 bg-white p-3 shadow-sm sm:p-4">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <h2 className="text-base font-semibold text-[#0b0b0b]">{title}</h2>
+    <section className={`${CARD_CLASS} p-4 sm:p-6`}>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+        <div>
+          <h2 className="text-base font-medium text-ink">{title}</h2>
+          {subtitle && <p className="mt-0.5 text-xs text-muted">{subtitle}</p>}
+        </div>
         {legend}
       </div>
       <div className="h-60 w-full sm:h-72">{children}</div>
-    </div>
+    </section>
   )
 }
 
 function LegendItem({ label, opacity = 1, width = 2 }) {
   return (
-    <span className="flex items-center gap-1.5 text-xs text-[#52514e]">
+    <span className="flex items-center gap-1.5 text-xs text-muted">
       <span
         className="inline-block w-4 rounded-full"
         style={{ height: width, backgroundColor: SERIES_COLOR, opacity }}
@@ -90,10 +130,10 @@ function LegendItem({ label, opacity = 1, width = 2 }) {
 function CustomTooltip({ active, payload, label, labelPrefix = '', labelFormatter = (l) => l }) {
   if (!active || !payload || !payload.length) return null
   return (
-    <div className="rounded-md border border-black/10 bg-white px-3 py-2 text-sm shadow-md">
-      <p className="text-[#52514e]">{labelPrefix}{labelFormatter(label)}</p>
+    <div className="rounded-xl border border-line bg-card px-3 py-2 text-sm shadow-[0_6px_20px_-8px_rgba(58,53,48,0.18)]">
+      <p className="text-xs text-muted">{labelPrefix}{labelFormatter(label)}</p>
       {payload.length === 1 ? (
-        <p className="font-semibold tabular-nums text-[#0b0b0b]">
+        <p className="font-medium tabular-nums text-ink">
           {formatBaht(payload[0].value)}
         </p>
       ) : (
@@ -101,8 +141,8 @@ function CustomTooltip({ active, payload, label, labelPrefix = '', labelFormatte
           .filter((p) => p.value != null)
           .map((p) => (
             <p key={p.dataKey} className="flex justify-between gap-4 tabular-nums">
-              <span className="text-[#52514e]">{p.name}</span>
-              <span className="font-semibold text-[#0b0b0b]">{formatBaht(p.value)}</span>
+              <span className="text-muted">{p.name}</span>
+              <span className="font-medium text-ink">{formatBaht(p.value)}</span>
             </p>
           ))
       )}
@@ -164,23 +204,26 @@ function App({ rows }) {
 
   if (!rows || !kpis) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7]">
-        <p className="text-[#52514e]">กำลังโหลดข้อมูล...</p>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-muted">กำลังโหลดข้อมูล...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] px-4 py-5 sm:p-6">
+    <div className="px-4 py-6 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl space-y-4 sm:space-y-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h1 className="text-xl font-semibold text-[#0b0b0b] sm:text-2xl">
-            บ้านบรู Dashboard
-          </h1>
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] text-muted">Sales overview</p>
+            <h1 className="mt-1 text-2xl font-light tracking-tight text-ink sm:text-3xl">
+              ภาพรวมยอดขาย
+            </h1>
+          </div>
           {dataRange && (
-            <p className="text-sm text-[#52514e]">
+            <p className="rounded-full border border-line bg-card px-3 py-1 text-xs text-muted sm:text-sm">
               ข้อมูลวันที่{' '}
-              <span className="font-medium tabular-nums text-[#0b0b0b]">
+              <span className="font-medium tabular-nums text-ink">
                 {formatThaiShortDate(dataRange.min)} –{' '}
                 {formatThaiShortDate(dataRange.max)}
               </span>
@@ -188,7 +231,7 @@ function App({ rows }) {
           )}
         </div>
 
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-black/10 bg-white p-3 shadow-sm sm:gap-4 sm:p-4">
+        <div className={`${CARD_CLASS} flex flex-wrap items-end gap-3 p-4 sm:gap-4 sm:p-5`}>
           <FilterField label="สาขา">
             <select
               value={branch}
@@ -227,12 +270,12 @@ function App({ rows }) {
             type="button"
             onClick={resetFilters}
             disabled={!isFiltered}
-            className="h-9 rounded-md border border-black/15 px-3 text-sm text-[#0b0b0b] hover:bg-black/5 disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent"
+            className="h-10 rounded-xl border border-line px-4 text-sm text-ink transition-colors hover:bg-blush hover:text-blush-ink disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
           >
             ล้างตัวกรอง
           </button>
           {isFiltered && (
-            <p className="basis-full text-xs text-[#52514e]">
+            <p className="basis-full text-xs text-muted">
               กำลังแสดง: {branch || 'ทุกสาขา'} ·{' '}
               {formatThaiShortDate(from || dataRange.min)} –{' '}
               {formatThaiShortDate(to || dataRange.max)} ·{' '}
@@ -242,26 +285,31 @@ function App({ rows }) {
         </div>
 
         {filteredRows.length === 0 ? (
-          <div className="rounded-lg border border-black/10 bg-white p-8 text-center text-[#52514e] shadow-sm">
+          <div className={`${CARD_CLASS} p-10 text-center text-muted`}>
             ไม่มีข้อมูลในสาขาและช่วงวันที่ที่เลือก
           </div>
         ) : (
         <>
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-          <KpiCard label="ยอดขายรวม" value={formatBaht(kpis.totalRevenue)} />
-          <KpiCard label="จำนวนบิล" value={formatCount(kpis.billCount)} />
+          <KpiCard label="ยอดขายรวม" value={formatBaht(kpis.totalRevenue)} icon="revenue" tone="sage" />
+          <KpiCard label="จำนวนบิล" value={formatCount(kpis.billCount)} icon="bills" tone="mist" />
           <KpiCard
             label="ยอดเฉลี่ยต่อบิล"
             value={formatBaht(kpis.avgPerBill)}
+            icon="avg"
+            tone="oat"
           />
           <KpiCard
             label="ลูกค้าสมาชิก (ไม่ซ้ำ)"
             value={formatCount(kpis.uniqueMembers)}
+            icon="members"
+            tone="blush"
           />
         </div>
 
         <ChartCard
           title="ยอดขายรายวัน"
+          subtitle="เส้นเข้ม = ค่าเฉลี่ย 7 วัน ช่วยให้เห็นแนวโน้มชัดขึ้น"
           legend={
             <div className="flex gap-4">
               <LegendItem label="รายวัน" opacity={DAILY_LINE_OPACITY} width={1.5} />
@@ -277,7 +325,7 @@ function App({ rows }) {
                 tickFormatter={formatThaiShortDate}
                 tick={{ fontSize: 12, fill: AXIS_COLOR }}
                 tickLine={false}
-                axisLine={{ stroke: AXIS_COLOR }}
+                axisLine={{ stroke: GRID_COLOR }}
                 minTickGap={24}
               />
               <YAxis
@@ -287,7 +335,10 @@ function App({ rows }) {
                 tickFormatter={formatAxisNumber}
                 width={40}
               />
-              <Tooltip content={<CustomTooltip labelFormatter={formatThaiShortDate} />} />
+              <Tooltip
+                content={<CustomTooltip labelFormatter={formatThaiShortDate} />}
+                cursor={{ stroke: GRID_COLOR, strokeWidth: 1 }}
+              />
               <Line
                 type="monotone"
                 dataKey="revenue"
@@ -296,7 +347,7 @@ function App({ rows }) {
                 strokeOpacity={DAILY_LINE_OPACITY}
                 strokeWidth={1}
                 dot={false}
-                activeDot={{ r: 3 }}
+                activeDot={{ r: 3, strokeWidth: 0 }}
                 isAnimationActive={false}
               />
               <Line
@@ -306,14 +357,17 @@ function App({ rows }) {
                 stroke={SERIES_COLOR}
                 strokeWidth={2.5}
                 dot={false}
-                activeDot={{ r: 4 }}
+                activeDot={{ r: 5, stroke: '#fffdf8', strokeWidth: 2 }}
                 isAnimationActive={false}
               />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="ยอดขายแยกสาขา (มากไปน้อย)">
+        <ChartCard
+          title="ยอดขายแยกสาขา"
+          subtitle={branch ? `เทียบ ${branch} กับสาขาอื่น · เรียงจากมากไปน้อย` : 'เรียงจากมากไปน้อย'}
+        >
           <ResponsiveContainer>
             {/* layout="vertical" = horizontal bars: branches on the Y axis,
                 revenue on the X axis. branchSales is already sorted highest
@@ -334,14 +388,14 @@ function App({ rows }) {
               <YAxis
                 type="category"
                 dataKey="branch"
-                tick={{ fontSize: 12, fill: AXIS_COLOR }}
+                tick={{ fontSize: 12, fill: LABEL_COLOR }}
                 tickLine={false}
-                axisLine={{ stroke: AXIS_COLOR }}
+                axisLine={{ stroke: GRID_COLOR }}
                 interval={0}
                 width={84}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-              <Bar dataKey="revenue" fill={SERIES_COLOR} radius={[0, 4, 4, 0]} isAnimationActive={false}>
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: CURSOR_FILL }} />
+              <Bar dataKey="revenue" fill={SERIES_COLOR} radius={[0, 8, 8, 0]} maxBarSize={26} isAnimationActive={false}>
                 {/* With a branch selected, its bar stays solid and the others
                     fade, so it can still be compared against them. */}
                 {branchSales.map((b) => (
@@ -354,7 +408,7 @@ function App({ rows }) {
                   dataKey="revenue"
                   position="right"
                   formatter={formatAxisNumber}
-                  style={{ fontSize: 12, fill: '#52514e' }}
+                  style={{ fontSize: 12, fill: LABEL_COLOR }}
                 />
               </Bar>
             </BarChart>

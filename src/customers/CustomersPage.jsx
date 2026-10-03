@@ -21,11 +21,21 @@ import {
   membersByAge,
   newMembersByMonth,
 } from './customerMetrics'
+import {
+  AXIS_COLOR,
+  CARD_CLASS,
+  CURSOR_FILL,
+  GRID_COLOR,
+  LABEL_COLOR,
+  SERIES_COLOR,
+  TOOLTIP_STYLE,
+} from '../theme'
 
-const MAIN = '#2a78d6'
-const GRID = '#e1e0d9'
-const AXIS = '#898781'
+const MAIN = SERIES_COLOR
+const GRID = GRID_COLOR
+const AXIS = AXIS_COLOR
 const TICK = { fontSize: 12, fill: AXIS }
+const LABEL = { fontSize: 11, fill: LABEL_COLOR }
 const FADED = 0.35
 const pct = (x) => `${(x * 100).toFixed(1)}%`
 
@@ -37,31 +47,37 @@ const thaiMonth = (ym) => {
 
 const tooltipProps = (label, fmt = formatCount) => ({
   formatter: (v) => [fmt(v), label],
-  contentStyle: { fontSize: 12, borderRadius: 6 },
-  cursor: { fill: 'rgba(0,0,0,0.04)' },
+  contentStyle: TOOLTIP_STYLE,
+  labelStyle: { color: LABEL_COLOR },
+  itemStyle: { color: '#3a3530' },
+  cursor: { fill: CURSOR_FILL },
 })
 
+// แถบสีพาสเทลด้านบนการ์ด ใช้แยกการ์ดให้ดูง่าย ไม่ได้สื่อความหมายของข้อมูล
+const TONES = { sage: 'bg-sage', mist: 'bg-mist', blush: 'bg-blush', oat: 'bg-oat' }
+
 /** ตัวเลขสรุปบนสุดของหน้า ใช้หน้าตาเดียวกับ KpiCard ในหน้าภาพรวม และมีบรรทัดอธิบายเสริมได้ */
-function StatCard({ label, value, note }) {
+function StatCard({ label, value, note, tone }) {
   return (
-    <div className="min-w-0 rounded-lg border border-black/10 bg-white p-3 shadow-sm sm:p-4">
-      <p className="text-xs text-[#52514e] sm:text-sm">{label}</p>
-      <p className="mt-1 break-words text-lg font-semibold tabular-nums text-[#0b0b0b] sm:text-2xl">{value}</p>
-      {note && <p className="mt-1 text-xs leading-snug text-[#52514e]">{note}</p>}
+    <div className={`${CARD_CLASS} min-w-0 p-4 sm:p-5`}>
+      <span className={`mb-3 block h-1.5 w-8 rounded-full ${TONES[tone]}`} />
+      <p className="text-xs text-muted sm:text-sm">{label}</p>
+      <p className="mt-1 break-words text-xl font-medium tabular-nums tracking-tight text-ink sm:text-[1.75rem]">{value}</p>
+      {note && <p className="mt-1.5 text-xs leading-snug text-muted">{note}</p>}
     </div>
   )
 }
 
 function ChartCard({ title, summary, note, children }) {
   return (
-    <div className="flex flex-col rounded-lg border border-black/10 bg-white p-3 shadow-sm sm:p-4">
-      <h2 className="text-base font-semibold text-[#0b0b0b]">{title}</h2>
-      <p className="mt-1 text-sm leading-snug text-[#52514e]">{summary}</p>
-      <div className="mt-3 h-64 w-full">
+    <section className={`${CARD_CLASS} flex flex-col p-4 sm:p-6`}>
+      <h2 className="text-base font-medium text-ink">{title}</h2>
+      <p className="mt-1 text-sm leading-relaxed text-muted [&_b]:font-medium [&_b]:text-ink">{summary}</p>
+      <div className="mt-4 h-64 w-full">
         <ResponsiveContainer>{children}</ResponsiveContainer>
       </div>
-      {note && <p className="mt-2 text-xs leading-snug text-[#52514e]">{note}</p>}
-    </div>
+      {note && <p className="mt-3 rounded-xl bg-paper px-3 py-2 text-xs leading-snug text-muted">{note}</p>}
+    </section>
   )
 }
 
@@ -78,11 +94,11 @@ function AgeChart({ customers }) {
     >
       <BarChart data={data} margin={{ left: 0, right: 8, top: 16, bottom: 0 }}>
         <CartesianGrid vertical={false} stroke={GRID} />
-        <XAxis dataKey="age" tick={TICK} tickLine={false} axisLine={{ stroke: AXIS }} interval={0} />
+        <XAxis dataKey="age" tick={TICK} tickLine={false} axisLine={{ stroke: GRID }} interval={0} />
         <YAxis tick={TICK} tickLine={false} axisLine={false} width={40} tickFormatter={formatCount} />
         <Tooltip {...tooltipProps('สมาชิก (คน)')} />
-        <Bar dataKey="count" fill={MAIN} radius={[3, 3, 0, 0]} isAnimationActive={false}>
-          <LabelList dataKey="share" position="top" formatter={pct} style={{ fontSize: 11, fill: AXIS }} />
+        <Bar dataKey="count" fill={MAIN} radius={[6, 6, 0, 0]} maxBarSize={36} isAnimationActive={false}>
+          <LabelList dataKey="share" position="top" formatter={pct} style={LABEL} />
         </Bar>
       </BarChart>
     </ChartCard>
@@ -104,7 +120,7 @@ function MemberShareChart({ sales }) {
       <BarChart data={data} layout="vertical" margin={{ left: 0, right: 48, top: 0, bottom: 0 }}>
         <CartesianGrid horizontal={false} stroke={GRID} />
         <XAxis type="number" domain={[0, 1]} tick={TICK} tickLine={false} axisLine={false} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
-        <YAxis type="category" dataKey="branch" tick={TICK} tickLine={false} axisLine={{ stroke: AXIS }} interval={0} width={84} />
+        <YAxis type="category" dataKey="branch" tick={TICK} tickLine={false} axisLine={{ stroke: GRID }} interval={0} width={84} />
         <Tooltip
           {...tooltipProps('บิลของสมาชิก', pct)}
           labelFormatter={(b) => {
@@ -112,8 +128,8 @@ function MemberShareChart({ sales }) {
             return `${b} · ${formatCount(d.memberBills)} จาก ${formatCount(d.bills)} บิล`
           }}
         />
-        <Bar dataKey="share" fill={MAIN} radius={[0, 3, 3, 0]} isAnimationActive={false}>
-          <LabelList dataKey="share" position="right" formatter={pct} style={{ fontSize: 11, fill: AXIS }} />
+        <Bar dataKey="share" fill={MAIN} radius={[0, 6, 6, 0]} maxBarSize={24} isAnimationActive={false}>
+          <LabelList dataKey="share" position="right" formatter={pct} style={LABEL} />
         </Bar>
       </BarChart>
     </ChartCard>
@@ -152,7 +168,7 @@ function NewMembersChart({ customers, dataEnd }) {
     >
       <BarChart data={data} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
         <CartesianGrid vertical={false} stroke={GRID} />
-        <XAxis dataKey="month" tick={TICK} tickLine={false} axisLine={{ stroke: AXIS }} tickFormatter={thaiMonth} minTickGap={8} />
+        <XAxis dataKey="month" tick={TICK} tickLine={false} axisLine={{ stroke: GRID }} tickFormatter={thaiMonth} minTickGap={8} />
         <YAxis tick={TICK} tickLine={false} axisLine={false} width={40} tickFormatter={formatCount} />
         <Tooltip
           {...tooltipProps('สมาชิกใหม่ (คน)')}
@@ -161,7 +177,7 @@ function NewMembersChart({ customers, dataEnd }) {
             return d.partial ? `${thaiMonth(m)} · ข้อมูล ${d.days}/${d.fullDays} วัน` : thaiMonth(m)
           }}
         />
-        <Bar dataKey="count" fill={MAIN} radius={[3, 3, 0, 0]} isAnimationActive={false}>
+        <Bar dataKey="count" fill={MAIN} radius={[6, 6, 0, 0]} maxBarSize={36} isAnimationActive={false}>
           {data.map((d) => <Cell key={d.month} fillOpacity={d.partial ? FADED : 1} />)}
         </Bar>
       </BarChart>
@@ -180,10 +196,10 @@ function VisitsChart({ visits: v }) {
       <BarChart data={v.buckets} layout="vertical" margin={{ left: 0, right: 56, top: 0, bottom: 0 }}>
         <CartesianGrid horizontal={false} stroke={GRID} />
         <XAxis type="number" tick={TICK} tickLine={false} axisLine={false} tickFormatter={formatCount} />
-        <YAxis type="category" dataKey="label" tick={TICK} tickLine={false} axisLine={{ stroke: AXIS }} interval={0} width={96} />
+        <YAxis type="category" dataKey="label" tick={TICK} tickLine={false} axisLine={{ stroke: GRID }} interval={0} width={96} />
         <Tooltip {...tooltipProps('สมาชิก (คน)')} />
-        <Bar dataKey="count" fill={MAIN} radius={[0, 3, 3, 0]} isAnimationActive={false}>
-          <LabelList dataKey="count" position="right" formatter={formatCount} style={{ fontSize: 11, fill: AXIS }} />
+        <Bar dataKey="count" fill={MAIN} radius={[0, 6, 6, 0]} maxBarSize={24} isAnimationActive={false}>
+          <LabelList dataKey="count" position="right" formatter={formatCount} style={LABEL} />
         </Bar>
       </BarChart>
     </ChartCard>
@@ -205,27 +221,31 @@ export default function CustomersPage({ customers, sales }) {
   }, [sales])
   const neverBought = visits.buckets[0].count
   return (
-    <div className="mx-auto max-w-6xl space-y-4 px-4 py-5 sm:space-y-6 sm:p-6">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-6 sm:space-y-6 sm:px-6 sm:py-10">
       <div>
-        <h1 className="text-xl font-semibold text-[#0b0b0b] sm:text-2xl">ลูกค้าสมาชิก</h1>
-        <p className="mt-1 text-sm text-[#52514e]">
+        <p className="text-xs uppercase tracking-[0.25em] text-muted">Members</p>
+        <h1 className="mt-1 text-2xl font-light tracking-tight text-ink sm:text-3xl">ลูกค้าสมาชิก</h1>
+        <p className="mt-2 text-sm text-muted">
           สมาชิกทั้งหมด {formatCount(customers.length)} คน (สมัครถึง {formatThaiShortDate(joinedEnd)})
           · ข้อมูลการซื้อจาก sales.csv ถึง {formatThaiShortDate(salesEnd)}
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-        <StatCard label="สมาชิกทั้งหมด" value={formatCount(visits.total)} />
+        <StatCard tone="sage" label="สมาชิกทั้งหมด" value={formatCount(visits.total)} />
         <StatCard
+          tone="mist"
           label="เคยซื้ออย่างน้อย 1 บิล"
           value={formatCount(visits.buyers)}
           note={`${pct(visits.buyers / visits.total)} ของสมาชิก`}
         />
         <StatCard
+          tone="blush"
           label="สมัครแล้วยังไม่เคยซื้อ"
           value={formatCount(neverBought)}
           note={`${pct(neverBought / visits.total)} ของสมาชิก · ถ้าคิดยอดต่อสมาชิก ควรหารด้วยคนที่เคยซื้อ`}
         />
         <StatCard
+          tone="oat"
           label="บิลที่เป็นของสมาชิก"
           value={pct(billShare.memberBills / billShare.bills)}
           note={`${formatCount(billShare.memberBills)} จาก ${formatCount(billShare.bills)} บิล`}

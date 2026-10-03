@@ -59,28 +59,40 @@ function Root() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7]">
-      <nav className="sticky top-0 z-10 border-b border-black/10 bg-[#f9f9f7]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl gap-1 px-4 py-2 sm:px-6">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => choose(t.id)}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-                tab === t.id ? 'bg-[#0b0b0b] text-white' : 'text-[#52514e] hover:bg-black/5'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+    <div className="min-h-screen bg-paper">
+      <header className="sticky top-0 z-10 border-b border-line bg-paper/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-2.5">
+            <img src="/favicon.svg" alt="" className="h-8 w-8" />
+            <div className="leading-tight">
+              <p className="text-[15px] font-semibold tracking-wide text-ink">บ้านบรู</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted">baan brew</p>
+            </div>
+          </div>
+          <nav className="-mx-1 flex max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-card/70 p-1">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => choose(t.id)}
+                aria-current={tab === t.id ? 'page' : undefined}
+                className={`shrink-0 rounded-full px-4 py-1.5 text-sm transition-colors ${
+                  tab === t.id
+                    ? 'bg-sage font-medium text-sage-ink'
+                    : 'text-muted hover:bg-paper hover:text-ink'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
         </div>
-      </nav>
+      </header>
 
       {error ? (
-        <p className="p-6 text-center text-[#d03b3b]">{error}</p>
+        <p className="p-6 text-center text-danger">{error}</p>
       ) : !rows ? (
-        <p className="p-6 text-center text-[#52514e]">กำลังโหลดข้อมูล...</p>
+        <p className="p-10 text-center text-muted">กำลังโหลดข้อมูล...</p>
       ) : tab === 'overview' ? (
         <App rows={rows} />
       ) : tab === 'customers' ? (
@@ -90,6 +102,10 @@ function Root() {
           <Lab2Page rows={labRows} products={products} />
         </div>
       )}
+
+      <footer className="mx-auto max-w-6xl px-4 pb-8 pt-2 text-center text-xs tracking-wide text-muted/80 sm:px-6">
+        บ้านบรู · ข้อมูลจาก sales.csv, customers.csv
+      </footer>
     </div>
   )
 }

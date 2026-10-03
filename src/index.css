@@ -1,1 +1,35 @@
 @import "tailwindcss";
+
+/* Muji modern pastel: unbleached-paper background, warm charcoal ink, hairline
+   borders, and soft pastel tints used only as decoration. Data colors live in
+   src/theme.js so the charts and the CSS stay in step. */
+@theme {
+  --font-sans: "IBM Plex Sans Thai", "Noto Sans Thai", ui-sans-serif, system-ui, sans-serif;
+
+  --color-paper: #f4f0e8;
+  --color-card: #fffdf8;
+  --color-ink: #3a3530;
+  --color-muted: #857c72;
+  --color-line: #e6dfd3;
+  --color-accent: #76937f;
+  --color-danger: #b5655a;
+
+  --color-sage: #dde6d9;
+  --color-sage-ink: #5f7d68;
+  --color-mist: #dde5ec;
+  --color-mist-ink: #5b7488;
+  --color-blush: #f2dfd7;
+  --color-blush-ink: #a26a5a;
+  --color-oat: #efe5d2;
+  --color-oat-ink: #8f7650;
+}
+
+@layer base {
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.45;
+    cursor: pointer;
+  }
+}
