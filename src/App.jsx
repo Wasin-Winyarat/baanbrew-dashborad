@@ -52,32 +52,77 @@ export default function App() {
     return isConfigured ? firestoreSource : null;
   }, [rows, products, holidays]);
 
+  // แท็บตาม #hash ใน URL (รวมกด back/forward หรือแก้ URL เอง)
+  useEffect(() => {
+    const onHash = () => setTab(TABS.find((t) => "#" + t.id === location.hash)?.id ?? "overview");
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  // บนจอแคบเมนูเลื่อนแนวนอนได้ ให้แท็บที่เลือกอยู่ในสายตาเสมอ
+  useEffect(() => {
+    document.querySelector('nav [aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [tab]);
+
   const choose = (id) => { setTab(id); history.replaceState(null, "", location.search + "#" + id); };
   const needsCsv = tab === "overview" || tab === "lab2" || DEMO;
+  // ภาพรวมและแท็บสดจัดระยะหน้าเองอยู่แล้ว แท็บอื่นใช้กรอบเดียวกันจากตรงนี้
+  const ownLayout = tab === "overview" || tab === "live";
+
+  const content = (
+    <>
+      {error && needsCsv && <p className="rounded-xl bg-blush/50 p-3 text-sm text-danger">โหลดข้อมูลไม่สำเร็จ: {error} ตรวจว่ามี public/sales.csv และ public/products.csv</p>}
+      {!error && needsCsv && !rows && <p className="py-16 text-center text-muted">กำลังโหลดข้อมูลยอดขาย…</p>}
+      {rows && tab === "overview" && <Overview rows={rows} products={products} />}
+      {rows && tab === "lab2" && <Lab2Page rows={rows} products={products} />}
+      {tab === "live" && (source ? <LiveTab source={source} /> : !DEMO && <SetupGuide />)}
+      {tab === "customers" && (source ? <CustomersTab source={source} /> : !DEMO && <SetupGuide />)}
+      {tab === "forecast" && (source ? <ForecastTab source={source} /> : !DEMO && <SetupGuide />)}
+      {tab === "rules" && (DEMO ? <p className="text-muted">การทดสอบ Rules ใช้ได้กับ Firebase จริงเท่านั้น ไม่ใช่โหมดสาธิต</p>
+        : isConfigured ? <RulesTester /> : <SetupGuide />)}
+    </>
+  );
 
   return (
-    <main className="min-h-screen bg-stone-100 text-stone-900">
-      <nav className="sticky top-0 z-10 border-b border-stone-200 bg-stone-100/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-5 py-2">
-          {TABS.map((t) => (
-            <button key={t.id} onClick={() => choose(t.id)}
-                    className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium ${tab === t.id ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-200"}`}>
-              {t.label}
-            </button>
-          ))}
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-20 border-b border-line/80 bg-paper/75 backdrop-blur-md">
+        {/* แถบสีแบรนด์บาง ๆ บนสุด */}
+        <div className="h-1 bg-gradient-to-r from-[#f6a35f] via-accent to-[#f2c46d]" />
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
+          <a href={location.search + "#overview"} onClick={(e) => { e.preventDefault(); choose("overview"); }}
+             className="flex items-center gap-2.5 rounded-xl focus-visible:outline-2 focus-visible:outline-accent">
+            <img src="/favicon.svg" alt="" className="h-9 w-9 drop-shadow-[0_4px_8px_rgba(232,116,44,0.35)]" />
+            <span className="leading-tight">
+              <span className="block text-base font-semibold tracking-wide text-ink">บ้านบรู</span>
+              <span className="block text-[11px] uppercase tracking-[0.2em] text-brand-strong">baan brew · dashboard</span>
+            </span>
+            {DEMO && <span className="ml-1 rounded-full bg-oat px-2 py-0.5 text-[11px] font-medium text-oat-ink">โหมดสาธิต</span>}
+          </a>
+          <nav aria-label="แท็บ" className="-mx-1 flex max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-card/80 p-1 shadow-[0_1px_2px_rgba(59,44,34,0.04)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {TABS.map((t) => (
+              <button key={t.id} type="button" onClick={() => choose(t.id)} aria-current={tab === t.id ? "page" : undefined}
+                      className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm transition-colors ${
+                        tab === t.id
+                          ? "bg-brand-strong font-medium text-white shadow-[0_4px_12px_-4px_rgba(185,83,28,0.6)]"
+                          : "text-muted hover:bg-brand/60 hover:text-brand-ink"}`}>
+                {t.label}
+              </button>
+            ))}
+          </nav>
         </div>
-      </nav>
-      <div className="mx-auto max-w-6xl px-5 py-8">
-        {error && needsCsv && <p className="text-red-700">โหลดข้อมูลไม่สำเร็จ: {error} ตรวจว่ามี public/sales.csv และ public/products.csv</p>}
-        {!error && needsCsv && !rows && <p className="text-stone-500">กำลังโหลดข้อมูลยอดขาย…</p>}
-        {rows && tab === "overview" && <Overview rows={rows} products={products} />}
-        {rows && tab === "lab2" && <Lab2Page rows={rows} products={products} />}
-        {tab === "live" && (source ? <LiveTab source={source} /> : !DEMO && <SetupGuide />)}
-        {tab === "customers" && (source ? <CustomersTab source={source} /> : !DEMO && <SetupGuide />)}
-        {tab === "forecast" && (source ? <ForecastTab source={source} /> : !DEMO && <SetupGuide />)}
-        {tab === "rules" && (DEMO ? <p className="text-stone-600">การทดสอบ Rules ใช้ได้กับ Firebase จริงเท่านั้น ไม่ใช่โหมดสาธิต</p>
-          : isConfigured ? <RulesTester /> : <SetupGuide />)}
-      </div>
-    </main>
+      </header>
+
+      <main className="flex-1">
+        {ownLayout ? content : (
+          <div className="px-4 py-6 sm:px-6 sm:py-10">
+            <div className="mx-auto max-w-6xl">{content}</div>
+          </div>
+        )}
+      </main>
+
+      <footer className="mx-auto w-full max-w-6xl px-4 pb-8 pt-2 text-center text-xs tracking-wide text-muted/80 sm:px-6">
+        บ้านบรู · ข้อมูลจาก sales.csv และ Firestore
+      </footer>
+    </div>
   );
 }

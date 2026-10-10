@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import {
   ResponsiveContainer, ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ReferenceDot,
 } from "recharts";
-import { AnalyticsShell, Card, Pending, Insight, MAIN, GREEN, MUTED, INK, thaiDay } from "./ui.jsx";
+import { AnalyticsShell, Card, Pending, Insight, Pill, MAIN, SCALE, MUTED, INK, GRID, legendText, thaiDay } from "./ui.jsx";
 import { useAnalytics } from "./useAnalytics.js";
 import { toSeries } from "../lib/analytics/daily.js";
 import { seasonalForecast, backtest, mape } from "../lib/analytics/forecast.js";
@@ -66,18 +66,17 @@ function ForecastCard({ daily }) {
   const isWeek = view === "week";
   return (
     <Card title="พยากรณ์ยอดขาย 28 วัน" sub="ค่าเฉลี่ยวันเดียวกันของสัปดาห์ 8 สัปดาห์ล่าสุด · แถบ = ช่วงที่คาดว่าครอบคลุมราว 80% ของวัน"
-          right={<div className="flex flex-wrap gap-1">
+          right={<div className="-mx-1 flex max-w-full gap-1 overflow-x-auto px-1 py-0.5 [scrollbar-width:none]">
             {[null, ...BRANCHES].map((b) => (
-              <button key={b ?? "all"} onClick={() => setBranch(b)}
-                      className={`rounded-lg px-2.5 py-1 text-sm ${branch === b ? "bg-stone-900 text-white" : "text-stone-600 ring-1 ring-stone-200"}`}>{b ?? "รวม"}</button>
+              <Pill key={b ?? "all"} active={branch === b} onClick={() => setBranch(b)}>{b ?? "รวม"}</Pill>
             ))}
           </div>}>
       {result.error ? <Pending lab="Lab 4.4" error={result.error} /> : (
         <>
-          <div className="mb-3 inline-flex rounded-lg p-0.5 ring-1 ring-stone-200">
+          <div className="mb-4 inline-flex gap-0.5 rounded-full bg-paper p-0.5 ring-1 ring-line">
             {[["day", "รายวัน"], ["week", "รายสัปดาห์"]].map(([id, label]) => (
-              <button key={id} onClick={() => setView(id)}
-                      className={`rounded-md px-3 py-1 text-sm ${view === id ? "bg-stone-900 text-white" : "text-stone-600"}`}>{label}</button>
+              <button key={id} type="button" onClick={() => setView(id)} aria-pressed={view === id}
+                      className={`rounded-full px-3.5 py-1 text-sm transition-colors ${view === id ? "bg-card font-medium text-ink shadow-sm ring-1 ring-line" : "text-muted hover:text-ink"}`}>{label}</button>
             ))}
           </div>
           {isWeek ? (
@@ -98,14 +97,14 @@ function ForecastCard({ daily }) {
           <div className="mt-4 h-72">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={isWeek ? r.weekChart : r.chart} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
-                <CartesianGrid vertical={false} stroke="#eee" />
+                <CartesianGrid vertical={false} stroke={GRID} />
                 <XAxis dataKey="date" tickFormatter={isWeek ? (d) => `สัปดาห์ ${shortDay(d)}` : shortDay} minTickGap={36} tick={{ fontSize: 12 }} />
                 <YAxis tickFormatter={fmtShortBaht} width={56} domain={[0, "auto"]} tick={{ fontSize: 12 }} />
                 <Tooltip labelFormatter={isWeek ? (d) => `สัปดาห์เริ่ม ${thaiDay(d)} (จ.–อา.)` : thaiDay}
                          formatter={(v, n) => [Array.isArray(v) ? `${fmtBaht(v[0])} – ${fmtBaht(v[1])}` : fmtBaht(v), n]} />
-                <Legend wrapperStyle={{ fontSize: 13 }} />
+                <Legend wrapperStyle={{ fontSize: 13 }} formatter={legendText} />
                 <ReferenceLine x={isWeek ? r.lastWeek : r.lastDate} stroke={MUTED} strokeDasharray="3 3" label={{ value: "ข้อมูลถึง", position: "insideTopLeft", fontSize: 11, fill: INK }} />
-                {!isWeek && <Area name="ช่วงคาดการณ์" dataKey="band" stroke="none" fill={GREEN[1]} isAnimationActive={false} />}
+                {!isWeek && <Area name="ช่วงคาดการณ์" dataKey="band" stroke="none" fill={SCALE[1]} isAnimationActive={false} />}
                 <Line name="ยอดจริง" dataKey="actual" stroke={INK} strokeWidth={2} dot={false} isAnimationActive={false} />
                 <Line name="คาดการณ์" dataKey="forecast" stroke={MAIN} strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
               </ComposedChart>
@@ -132,18 +131,18 @@ function ForecastCard({ daily }) {
 
 function Stat({ label, value, note, muted }) {
   return (
-    <div className="rounded-lg bg-stone-50 p-3">
-      <div className="text-xs text-stone-500">{label}</div>
-      <div className={`text-2xl font-semibold tabular-nums ${muted ? "text-stone-500" : ""}`}>{value}</div>
-      {note && <div className="text-xs text-stone-400">{note}</div>}
+    <div className="rounded-xl border border-line bg-paper/60 p-4">
+      <div className="text-xs leading-snug text-muted">{label}</div>
+      <div className={`mt-1.5 text-2xl font-semibold tracking-tight tabular-nums ${muted ? "text-muted" : "text-ink"}`}>{value}</div>
+      {note && <div className="mt-0.5 text-xs text-muted/80">{note}</div>}
     </div>
   );
 }
 
 // Lab 4.5B · กราฟซูม ±28 วันรอบวันที่เลือก ของสาขานั้น
 const ZOOM_DAYS = 28;
-const LOW = "#b91c1c";  // ต่ำกว่าปกติ
-const HIGH = "#d97706"; // สูงกว่าปกติ
+const LOW = "#b84a3a"; // ต่ำกว่าปกติ (สี danger ของธีม)
+const HIGH = MAIN;      // สูงกว่าปกติ (ส้มหลัก)
 
 function AnomalyZoom({ daily, all, focus, onClose }) {
   const from = addDays(focus.date, -ZOOM_DAYS);
@@ -155,29 +154,29 @@ function AnomalyZoom({ daily, all, focus, onClose }) {
     .map((s) => ({ date: s.date, actual: s.revenue, expected: expectedOn.get(s.date) }));
   const color = focus.change < 0 ? LOW : HIGH;
   return (
-    <div className="mb-4 rounded-lg p-3 ring-1 ring-stone-200">
+    <div className="mb-4 rounded-lg p-3 ring-1 ring-line">
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="font-medium">{focus.branch} · {thaiDay(focus.date)}</div>
-          <div className="text-sm text-stone-500">
+          <div className="text-sm text-muted">
             ยอดจริง {fmtBaht(focus.actual)} เทียบค่าปกติ {fmtBaht(focus.expected)} · ±{ZOOM_DAYS / 7} สัปดาห์รอบวันนั้น
           </div>
         </div>
         <button onClick={onClose} aria-label="ปิดกราฟ"
-                className="rounded-lg px-3 py-1.5 text-sm text-stone-600 ring-1 ring-stone-200 hover:bg-stone-100">ปิด</button>
+                className="rounded-lg px-3 py-1.5 text-sm text-muted ring-1 ring-line hover:bg-brand/40">ปิด</button>
       </div>
       <div className="mt-2 h-60">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke="#eee" />
+            <CartesianGrid vertical={false} stroke={GRID} />
             <XAxis dataKey="date" tickFormatter={shortDay} minTickGap={36} tick={{ fontSize: 12 }} />
             <YAxis tickFormatter={fmtShortBaht} width={56} domain={[0, "auto"]} tick={{ fontSize: 12 }} />
             <Tooltip labelFormatter={thaiDay} formatter={(v, n) => [fmtBaht(v), n]} />
-            <Legend wrapperStyle={{ fontSize: 13 }} />
+            <Legend wrapperStyle={{ fontSize: 13 }} formatter={legendText} />
             <ReferenceLine x={focus.date} stroke={MUTED} strokeDasharray="3 3" />
             <Line name="ยอดจริง" dataKey="actual" stroke={INK} strokeWidth={2} dot={false} isAnimationActive={false} />
-            <Line name="ค่าปกติ" dataKey="expected" stroke={MAIN} strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls isAnimationActive={false} />
-            <ReferenceDot x={focus.date} y={focus.actual} r={6} fill={color} stroke="#fff" strokeWidth={2} />
+            <Line name="ค่าปกติ" dataKey="expected" stroke={MUTED} strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls isAnimationActive={false} />
+            <ReferenceDot x={focus.date} y={focus.actual} r={6} fill={color} stroke="#fffcf8" strokeWidth={2} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -198,7 +197,7 @@ function AnomalyCard({ daily, holidays }) {
       {focus && <AnomalyZoom daily={daily} all={all} focus={focus} onClose={() => setFocus(null)} />}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[600px] text-sm tabular-nums">
-          <thead className="text-left text-stone-500">
+          <thead className="text-left text-muted">
             <tr><th className="py-1 font-medium">#</th><th className="font-medium">วันที่</th><th className="font-medium">สาขา</th>
               <th className="text-right font-medium">ยอดจริง</th><th className="text-right font-medium">ปกติ</th><th className="pl-4 font-medium">ต่างจากปกติ</th></tr>
           </thead>
@@ -207,16 +206,16 @@ function AnomalyCard({ daily, holidays }) {
               const sel = focus && focus.date === a.date && focus.branch === a.branch;
               return (
                 <tr key={a.date + a.branch} onClick={() => setFocus(sel ? null : a)}
-                    className={`cursor-pointer border-t border-stone-100 hover:bg-stone-50 ${sel ? "bg-emerald-50" : ""}`}>
-                  <td className="py-1.5 text-stone-400">{i + 1}</td>
-                  <td>{thaiDay(a.date)} <span className="text-stone-400">{new Date(a.date + "T00:00:00").toLocaleDateString("th-TH", { weekday: "short" })}</span></td>
+                    className={`cursor-pointer border-t border-line hover:bg-brand/40 ${sel ? "bg-brand/45" : ""}`}>
+                  <td className="py-1.5 text-muted/70">{i + 1}</td>
+                  <td>{thaiDay(a.date)} <span className="text-muted/70">{new Date(a.date + "T00:00:00").toLocaleDateString("th-TH", { weekday: "short" })}</span></td>
                   <td>{a.branch}</td>
                   <td className="text-right">{fmtBaht(a.actual)}</td>
-                  <td className="text-right text-stone-500">{fmtBaht(a.expected)}</td>
+                  <td className="text-right text-muted">{fmtBaht(a.expected)}</td>
                   <td className="pl-4">
                     {a.change < 0
-                      ? <span className="font-medium text-red-700">▼ ต่ำกว่าปกติ {Math.round(-a.change * 100)}%</span>
-                      : <span className="font-medium text-amber-700">▲ สูงกว่าปกติ {Math.round(a.change * 100)}%</span>}
+                      ? <span className="font-medium text-danger">▼ ต่ำกว่าปกติ {Math.round(-a.change * 100)}%</span>
+                      : <span className="font-medium text-oat-ink">▲ สูงกว่าปกติ {Math.round(a.change * 100)}%</span>}
                   </td>
                 </tr>
               );
@@ -235,11 +234,11 @@ function AnomalyCard({ daily, holidays }) {
 export default function ForecastTab({ source }) {
   const state = useAnalytics(source);
   return (
-    <AnalyticsShell source={source} state={state} title="พยากรณ์และวันผิดปกติ">
+    <AnalyticsShell source={source} state={state} title="พยากรณ์และวันผิดปกติ" eyebrow="Forecast & anomalies">
       {(d) => d.daily.error ? <Pending lab="pipeline" error={d.daily.error} /> : (
         <div className="space-y-6">
           {d.meta.alerts?.length > 0 && (
-            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
+            <p className="rounded-lg bg-blush/50 p-3 text-sm text-danger">
               🚨 ยอดวันล่าสุดผิดปกติ: {d.meta.alerts.map((a) => `${a.branch} ${fmtBaht(a.actual)} (ปกติ ${fmtBaht(a.expected)})`).join(", ")}
             </p>
           )}

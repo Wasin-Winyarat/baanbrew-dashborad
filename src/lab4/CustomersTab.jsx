@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, BarChart, Bar, ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   LabelList, Cell, ReferenceLine,
 } from "recharts";
-import { AnalyticsShell, Card, Pending, Insight, GREEN, MAIN, MUTED, INK, pct, thaiMonth } from "./ui.jsx";
+import { AnalyticsShell, Card, Pending, Insight, SCALE, MAIN, PAIR, MUTED, INK, GRID, legendText, pct, thaiMonth } from "./ui.jsx";
 import { useAnalytics } from "./useAnalytics.js";
 import { SEGMENTS } from "../lib/analytics/rfm.js";
 import { formatBaht as fmtBaht } from "../lib/metrics.js";
@@ -22,16 +22,16 @@ function RfmCard({ rfm, onPick, picked }) {
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} layout="vertical" margin={{ left: 8, right: 48 }} barGap={2}>
-            <CartesianGrid horizontal={false} stroke="#eee" />
+            <CartesianGrid horizontal={false} stroke={GRID} />
             <XAxis type="number" tickFormatter={(v) => pct(v)} domain={[0, 0.45]} tick={{ fontSize: 12 }} />
             <YAxis type="category" dataKey="label" width={96} tick={{ fontSize: 13 }} />
-            <Tooltip formatter={(v, n) => [pct(v, 1), n]} cursor={{ fill: "#f5f5f4" }} />
-            <Legend wrapperStyle={{ fontSize: 13 }} />
-            <Bar name="% ลูกค้า" dataKey="customerShare" fill={MUTED} radius={[0, 4, 4, 0]} isAnimationActive={false}
+            <Tooltip formatter={(v, n) => [pct(v, 1), n]} cursor={{ fill: "rgba(232,116,44,0.08)" }} />
+            <Legend wrapperStyle={{ fontSize: 13 }} formatter={legendText} />
+            <Bar name="% ลูกค้า" dataKey="customerShare" fill={PAIR} radius={[0, 4, 4, 0]} isAnimationActive={false}
                  onClick={(d) => onPick?.(d.payload?.segment ?? d.segment)} style={{ cursor: "pointer" }} />
             <Bar name="% ยอดซื้อ" dataKey="revenueShare" fill={MAIN} radius={[0, 4, 4, 0]} isAnimationActive={false}
                  onClick={(d) => onPick?.(d.payload?.segment ?? d.segment)} style={{ cursor: "pointer" }}>
-              {data.map((d) => <Cell key={d.segment} fill={picked && picked !== d.segment ? GREEN[2] : MAIN} />)}
+              {data.map((d) => <Cell key={d.segment} fill={picked && picked !== d.segment ? SCALE[1] : MAIN} />)}
               <LabelList dataKey="revenueShare" position="right" formatter={(v) => pct(v)} style={{ fontSize: 12, fill: INK }} />
             </Bar>
           </BarChart>
@@ -43,15 +43,15 @@ function RfmCard({ rfm, onPick, picked }) {
       </Insight>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[560px] text-sm">
-          <thead className="text-left text-stone-500"><tr><th className="py-1 font-medium">กลุ่ม</th><th className="text-right font-medium">ลูกค้า</th><th className="text-right font-medium">ยอดซื้อ</th><th className="pl-4 font-medium">ควรทำอะไร</th></tr></thead>
+          <thead className="text-left text-muted"><tr><th className="py-1 font-medium">กลุ่ม</th><th className="text-right font-medium">ลูกค้า</th><th className="text-right font-medium">ยอดซื้อ</th><th className="pl-4 font-medium">ควรทำอะไร</th></tr></thead>
           <tbody>
             {data.map((d) => (
               <tr key={d.segment} onClick={() => onPick?.(d.segment)}
-                  className={`cursor-pointer border-t border-stone-100 hover:bg-stone-50 ${picked === d.segment ? "bg-emerald-50" : ""}`}>
-                <td className="py-1.5">{d.label} <span className="text-stone-400">{d.segment}</span></td>
+                  className={`cursor-pointer border-t border-line hover:bg-brand/40 ${picked === d.segment ? "bg-brand/45" : ""}`}>
+                <td className="py-1.5">{d.label} <span className="text-muted/70">{d.segment}</span></td>
                 <td className="text-right tabular-nums">{d.customers.toLocaleString()}</td>
                 <td className="text-right tabular-nums">{fmtBaht(d.revenue)}</td>
-                <td className="pl-4 text-stone-600">{SEG_TH[d.segment].action}</td>
+                <td className="pl-4 text-muted">{SEG_TH[d.segment].action}</td>
               </tr>
             ))}
           </tbody>
@@ -66,7 +66,7 @@ const LIST_LIMIT = 15;
 const PDPA_NOTE = "ไฟล์นี้มีข้อมูลส่วนบุคคลของลูกค้า (PDPA) ใช้เพื่อดูแลลูกค้าของร้านเท่านั้น ห้ามส่งต่อหรือเผยแพร่ และลบไฟล์เมื่อใช้เสร็จ";
 const PDPA_CONFIRM = `⚠️ ${PDPA_NOTE}\n\nยืนยันดาวน์โหลดหรือไม่?`;
 
-// ใส่ BOM (﻿) หน้าไฟล์ ให้ Excel รู้ว่าเป็น UTF-8 และแสดงภาษาไทยถูก
+// ใส่ BOM (U+FEFF) หน้าไฟล์ ให้ Excel รู้ว่าเป็น UTF-8 และแสดงภาษาไทยถูก
 function downloadCsv(filename, header, rows) {
   const csv = [header, ...rows].map((r) => r.join(",")).join("\r\n");
   const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
@@ -96,20 +96,20 @@ function SegmentCustomersCard({ customers, segment, asOf, onClose }) {
       right={
         <div className="flex gap-2">
           <button onClick={download} disabled={!members.length}
-                  className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-40">
+                  className="rounded-lg bg-brand-strong px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-ink disabled:opacity-40">
             ดาวน์โหลด CSV
           </button>
           <button onClick={onClose} aria-label="ปิดรายชื่อ"
-                  className="rounded-lg px-3 py-1.5 text-sm text-stone-600 ring-1 ring-stone-200 hover:bg-stone-100">
+                  className="rounded-lg px-3 py-1.5 text-sm text-muted ring-1 ring-line hover:bg-brand/40">
             ปิด
           </button>
         </div>
       }
     >
-      <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">⚠️ {PDPA_NOTE}</p>
+      <p className="mt-3 rounded-lg bg-oat px-3 py-2 text-sm text-oat-ink">⚠️ {PDPA_NOTE}</p>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[480px] text-sm">
-          <thead className="text-left text-stone-500">
+          <thead className="text-left text-muted">
             <tr>
               <th className="py-1 font-medium">รหัส</th>
               <th className="text-right font-medium">ไม่ได้มา (วัน)</th>
@@ -120,7 +120,7 @@ function SegmentCustomersCard({ customers, segment, asOf, onClose }) {
           </thead>
           <tbody>
             {members.slice(0, LIST_LIMIT).map((c) => (
-              <tr key={c.id} className="border-t border-stone-100">
+              <tr key={c.id} className="border-t border-line">
                 <td className="py-1.5 font-mono">{c.id}</td>
                 <td className="text-right tabular-nums">{c.R.toLocaleString()}</td>
                 <td className="text-right tabular-nums">{c.F.toLocaleString()}</td>
@@ -139,7 +139,8 @@ function SegmentCustomersCard({ customers, segment, asOf, onClose }) {
 function CohortCard({ cohort }) {
   if (cohort.error) return <Card title="Cohort · การกลับมาซื้อซ้ำ"><Pending lab="Lab 4.2" error={cohort.error} /></Card>;
   const MAXK = 12;
-  const shade = (v) => GREEN[Math.min(5, Math.floor(v * 6))];
+  const level = (v) => Math.min(5, Math.floor(v * 6));
+  const shade = (v) => SCALE[level(v)];
   const avg1 = (() => {
     const xs = cohort.cohorts.filter((c) => c.retention.length > 2).map((c) => c.retention[1]);
     return xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -148,8 +149,8 @@ function CohortCard({ cohort }) {
     <Card title="Cohort · การกลับมาซื้อซ้ำ" sub="แถว = เดือนแรกที่ซื้อ · คอลัมน์ = เดือนที่เท่าไรหลังจากนั้น · ช่องลายขีด = เดือนล่าสุดที่ข้อมูลยังไม่ครบ">
       <div className="overflow-x-auto">
         <div className="inline-grid gap-[2px] text-xs tabular-nums" style={{ gridTemplateColumns: `72px 44px repeat(${MAXK + 1}, 40px)` }}>
-          <div className="font-medium text-stone-500">เดือนแรก</div><div className="text-right font-medium text-stone-500">คน</div>
-          {Array.from({ length: MAXK + 1 }, (_, k) => <div key={k} className="text-center font-medium text-stone-500">{k}</div>)}
+          <div className="font-medium text-muted">เดือนแรก</div><div className="text-right font-medium text-muted">คน</div>
+          {Array.from({ length: MAXK + 1 }, (_, k) => <div key={k} className="text-center font-medium text-muted">{k}</div>)}
           {cohort.cohorts.map((c) => (
             <Row key={c.cohort} c={c} MAXK={MAXK} shade={shade} partial={cohort.lastMonthPartial} />
           ))}
@@ -167,17 +168,19 @@ function Row({ c, MAXK, shade, partial }) {
   return (
     <>
       <div className="py-1">{thaiMonth(c.cohort)}</div>
-      <div className="py-1 text-right text-stone-500">{c.size}</div>
+      <div className="py-1 text-right text-muted">{c.size}</div>
       {Array.from({ length: MAXK + 1 }, (_, k) => {
         const v = c.retention[k];
         if (v === undefined) return <div key={k} />;
+        // เดือน 0 = 100% เสมอ ไม่มีข้อมูลใหม่ จึงแสดงจาง ๆ ไม่ให้แย่งสายตาจากช่องที่มีความหมาย
+        if (k === 0) return <div key={k} title={`${thaiMonth(c.cohort)} เดือนแรก: 100%`} className="h-7 rounded-[3px] bg-brand/50" />;
         const isPartial = partial && k === last && k > 0;
         return (
           <div key={k} title={`${thaiMonth(c.cohort)} เดือนที่ ${k}: ${pct(v, 1)}${isPartial ? " (เดือนไม่ครบ)" : ""}`}
                className="flex h-7 items-center justify-center rounded-[3px]"
                style={{
-                 background: isPartial ? `repeating-linear-gradient(45deg, ${shade(v)}, ${shade(v)} 4px, #fff 4px, #fff 6px)` : shade(v),
-                 color: v >= 0.5 ? "#fff" : INK,
+                 background: isPartial ? `repeating-linear-gradient(45deg, ${shade(v)}, ${shade(v)} 4px, #fffcf8 4px, #fffcf8 6px)` : shade(v),
+                 color: v >= 5 / 6 ? "#fff" : INK, // ตัวอักษรขาวเฉพาะช่องเข้มสุด (คอนทราสต์ ≥4.5:1)
                }}>
             {k === 0 ? "" : Math.round(v * 100)}
           </div>
@@ -193,13 +196,13 @@ function AbcCard({ abc }) {
   const items = abc.items;
   const nA = items.filter((i) => i.cls === "A").length;
   const C = items.filter((i) => i.cls === "C");
-  const fill = { A: MAIN, B: GREEN[2], C: "#d6d3d1" };
+  const fill = { A: SCALE[5], B: SCALE[3], C: SCALE[2] }; // ไล่สีเดียวตามลำดับ A → C
   return (
     <Card title="Pareto · ABC ของเมนู" sub="แท่ง = สัดส่วนยอดขายแต่ละเมนู · เส้น = ยอดสะสม · แกนเดียวกันเป็น %">
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={items} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke="#eee" />
+            <CartesianGrid vertical={false} stroke={GRID} />
             <XAxis dataKey="rank" tick={{ fontSize: 11 }} interval={4} label={{ value: "อันดับเมนู", position: "insideBottomRight", offset: -2, fontSize: 12 }} />
             <YAxis tickFormatter={(v) => pct(v)} domain={[0, 1]} width={44} tick={{ fontSize: 12 }} />
             <Tooltip labelFormatter={(r) => { const it = items[r - 1]; return `#${r} ${it.name} · กลุ่ม ${it.cls}`; }}
@@ -212,7 +215,7 @@ function AbcCard({ abc }) {
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-2 flex flex-wrap gap-4 text-sm text-stone-600">
+      <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted">
         {["A", "B", "C"].map((k) => (
           <span key={k}><i className="mr-1.5 inline-block h-3 w-3 rounded-sm align-[-1px]" style={{ background: fill[k] }} />
             กลุ่ม {k} {items.filter((i) => i.cls === k).length} เมนู</span>
@@ -229,7 +232,7 @@ export default function CustomersTab({ source }) {
   const state = useAnalytics(source);
   const [picked, setPicked] = useState(null);
   return (
-    <AnalyticsShell source={source} state={state} title="ลูกค้าและเมนู">
+    <AnalyticsShell source={source} state={state} title="ลูกค้าและเมนู" eyebrow="Customers & menu">
       {(d) => (
         <div className="space-y-6">
           <RfmCard rfm={d.rfm} picked={picked} onPick={(s) => setPicked((p) => (p === s ? null : s))} />
