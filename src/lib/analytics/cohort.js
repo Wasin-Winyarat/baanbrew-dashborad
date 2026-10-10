@@ -4,7 +4,9 @@
 
 /** จำนวนเดือนจาก a ถึง b เช่น monthIndex("2025-11", "2026-02") = 3 */
 export function monthIndex(a, b) {
-  throw new Error("ยังไม่ได้ทำ: monthIndex");
+  const [ya, ma] = a.split("-").map(Number);
+  const [yb, mb] = b.split("-").map(Number);
+  return (yb - ya) * 12 + (mb - ma);
 }
 
 /**
@@ -14,5 +16,34 @@ export function monthIndex(a, b) {
  *   retention ยาวเท่าจำนวนเดือนที่สังเกตได้ของ cohort นั้น (ถึง lastMonth)
  */
 export function computeCohorts(rows, asOf) {
-  throw new Error("ยังไม่ได้ทำ: computeCohorts");
+  // เดือนที่ลูกค้าแต่ละคนมาซื้อ (Set จึงนับซ้ำในเดือนเดียวกันครั้งเดียว)
+  const monthsByCustomer = new Map();
+  for (const row of rows) {
+    if (!row.customer_id) continue;
+    const months = monthsByCustomer.get(row.customer_id) ?? new Set();
+    months.add(row.date.slice(0, 7));
+    monthsByCustomer.set(row.customer_id, months);
+  }
+
+  const lastMonth = asOf.slice(0, 7);
+  // นับว่าแต่ละ cohort มีลูกค้ากลับมาในเดือนที่ k กี่คน
+  const byCohort = new Map();
+  for (const months of monthsByCustomer.values()) {
+    const first = [...months].sort()[0];
+    const c = byCohort.get(first) ?? { size: 0, active: new Array(monthIndex(first, lastMonth) + 1).fill(0) };
+    c.size += 1;
+    for (const m of months) c.active[monthIndex(first, m)] += 1;
+    byCohort.set(first, c);
+  }
+
+  const cohorts = [...byCohort.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([cohort, c]) => ({ cohort, size: c.size, retention: c.active.map((n) => n / c.size) }));
+
+  // จำนวนวันของเดือนสุดท้าย: วันที่ 0 ของเดือนถัดไป = วันสุดท้ายของเดือนนี้
+  const [y, m] = lastMonth.split("-").map(Number);
+  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const daysInLastMonth = Number(asOf.slice(8, 10));
+
+  return { cohorts, lastMonth, lastMonthPartial: daysInLastMonth < daysInMonth, daysInLastMonth, daysInMonth };
 }
