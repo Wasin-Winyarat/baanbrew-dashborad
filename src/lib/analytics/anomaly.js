@@ -19,7 +19,37 @@ export const median = (xs) => {
  *   { date, branch, actual, expected, change (สัดส่วน เช่น -0.9 = ต่ำกว่าปกติ 90%), score, holiday }
  */
 export function scoreAnomalies(daily, holidays = {}, { weeks = 8, minWeeks = 4, smooth = 1000 } = {}) {
-  throw new Error("ยังไม่ได้ทำ: scoreAnomalies");
+  // ยอดของแต่ละสาขา ค้นตามวันที่ได้ทันที
+  const byBranch = new Map();
+  for (const d of daily) {
+    const m = byBranch.get(d.branch) ?? new Map();
+    m.set(d.date, d.revenue);
+    byBranch.set(d.branch, m);
+  }
+
+  const out = [];
+  for (const d of daily) {
+    const revenueOn = byBranch.get(d.branch);
+    // วันเดียวกันของสัปดาห์ ย้อนหลัง 1..weeks สัปดาห์ (เฉพาะวันที่มีข้อมูล)
+    const history = [];
+    for (let k = 1; k <= weeks; k++) {
+      const v = revenueOn.get(addDays(d.date, -7 * k));
+      if (v !== undefined) history.push(v);
+    }
+    if (history.length < minWeeks) continue;
+
+    const expected = median(history);
+    out.push({
+      date: d.date,
+      branch: d.branch,
+      actual: d.revenue,
+      expected,
+      change: expected ? d.revenue / expected - 1 : 0,
+      score: Math.log((d.revenue + smooth) / (expected + smooth)),
+      holiday: holidays[d.date] ?? null,
+    });
+  }
+  return out.sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
 }
 
 /** อันดับวันผิดปกติที่ควรตรวจสอบ (ไม่รวมวันหยุด) */
