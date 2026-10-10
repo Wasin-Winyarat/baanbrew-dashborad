@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, getDocs, collection, query, limit, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "./firebase.js";
+import { CARD_CLASS } from "../theme";
 
 const base = (uid) => ({
   order_id: "RULES-TEST", datetime: "2000-01-01T00:00:00+07:00", date: "2000-01-01", hour: 0,
