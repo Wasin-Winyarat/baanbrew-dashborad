@@ -13,6 +13,7 @@ import { auth, db, googleProvider, projectId } from "./firebase.js";
 import { addDays, todayBangkok } from "./time.js";
 import { BRANCHES } from "./saleModel.js";
 import SaleForm from "./SaleForm.jsx";
+import { authErrorText } from "./AuthBar.jsx";
 import SetupGuide from "./SetupGuide.jsx";
 import KpiCard from "../components/KpiCard.jsx";
 import {
@@ -321,14 +322,6 @@ function LiveTabInner({ user }) {
     </div>
   );
 }
-
-const AUTH_ERROR_TEXT = {
-  "auth/unauthorized-domain": "โดเมนนี้ยังไม่ได้รับอนุญาต เพิ่มโดเมนของเว็บใน Firebase Console → Authentication → Settings → Authorized domains",
-  "auth/operation-not-allowed": "ยังไม่ได้เปิดการล็อกอินด้วย Google เปิดได้ที่ Firebase Console → Authentication → Sign-in method → Google",
-  "auth/popup-blocked": "เบราว์เซอร์บล็อกหน้าต่างล็อกอิน อนุญาตป๊อปอัปสำหรับเว็บนี้แล้วกดปุ่มอีกครั้ง",
-  "auth/popup-closed-by-user": "ปิดหน้าต่างล็อกอินก่อนเสร็จ กดปุ่มอีกครั้งเพื่อเข้าสู่ระบบ",
-};
-const authErrorText = (err) => AUTH_ERROR_TEXT[err.code] ?? `เข้าสู่ระบบไม่สำเร็จ (${err.code ?? err.message})`;
 
 function UserChip({ user }) {
   const name = user.displayName || user.email || "ผู้ใช้";

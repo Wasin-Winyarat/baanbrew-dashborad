@@ -9,7 +9,7 @@ import { useAnalytics } from "./useAnalytics.js";
 import { toSeries } from "../lib/analytics/daily.js";
 import { seasonalForecast, backtest } from "../lib/analytics/forecast.js";
 import { scoreAnomalies } from "../lib/analytics/anomaly.js";
-import { fmtBaht, fmtShortBaht } from "../lib/metrics.js";
+import { formatBaht as fmtBaht, formatShortBaht as fmtShortBaht } from "../lib/metrics.js";
 
 const BRANCHES = ["สยาม", "สีลม", "อารีย์", "บางนา", "มหาวิทยาลัย"];
 const HORIZON = 28;

@@ -7,7 +7,7 @@ import {
 import { AnalyticsShell, Card, Pending, Insight, GREEN, MAIN, MUTED, INK, pct, thaiMonth } from "./ui.jsx";
 import { useAnalytics } from "./useAnalytics.js";
 import { SEGMENTS } from "../lib/analytics/rfm.js";
-import { fmtBaht } from "../lib/metrics.js";
+import { formatBaht as fmtBaht } from "../lib/metrics.js";
 
 const SEG_TH = Object.fromEntries(SEGMENTS.map((s) => [s.id, s]));
 
