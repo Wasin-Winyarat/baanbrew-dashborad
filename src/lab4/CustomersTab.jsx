@@ -63,6 +63,8 @@ function RfmCard({ rfm, onPick, picked }) {
 
 // ---------------- รายชื่อลูกค้าในกลุ่มที่เลือก (Lab 4.1B) ----------------
 const LIST_LIMIT = 15;
+const PDPA_NOTE = "ไฟล์นี้มีข้อมูลส่วนบุคคลของลูกค้า (PDPA) ใช้เพื่อดูแลลูกค้าของร้านเท่านั้น ห้ามส่งต่อหรือเผยแพร่ และลบไฟล์เมื่อใช้เสร็จ";
+const PDPA_CONFIRM = `⚠️ ${PDPA_NOTE}\n\nยืนยันดาวน์โหลดหรือไม่?`;
 
 // ใส่ BOM (﻿) หน้าไฟล์ ให้ Excel รู้ว่าเป็น UTF-8 และแสดงภาษาไทยถูก
 function downloadCsv(filename, header, rows) {
@@ -78,11 +80,15 @@ function downloadCsv(filename, header, rows) {
 function SegmentCustomersCard({ customers, segment, asOf, onClose }) {
   const members = customers.filter((c) => c.segment === segment).sort((a, b) => b.M - a.M);
   const info = SEG_TH[segment];
-  const download = () => downloadCsv(
-    `rfm-${segment.toLowerCase().replace(/\s+/g, "-")}-${asOf}.csv`,
-    ["customer_id", "segment", "days_since_last", "bills", "revenue", "r", "f", "m"],
-    members.map((c) => [c.id, segment, c.R, c.F, c.M, c.r, c.f, c.m]),
-  );
+  const download = () => {
+    // รหัสสมาชิก + พฤติกรรมการซื้อ ระบุตัวบุคคลได้ = ข้อมูลส่วนบุคคลตาม PDPA จึงให้ยืนยันก่อนทุกครั้ง
+    if (!window.confirm(PDPA_CONFIRM)) return;
+    downloadCsv(
+      `rfm-${segment.toLowerCase().replace(/\s+/g, "-")}-${asOf}.csv`,
+      ["customer_id", "segment", "days_since_last", "bills", "revenue", "r", "f", "m"],
+      members.map((c) => [c.id, segment, c.R, c.F, c.M, c.r, c.f, c.m]),
+    );
+  };
   return (
     <Card
       title={`${info.th} · ${members.length.toLocaleString()} คน`}
@@ -100,6 +106,7 @@ function SegmentCustomersCard({ customers, segment, asOf, onClose }) {
         </div>
       }
     >
+      <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">⚠️ {PDPA_NOTE}</p>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[480px] text-sm">
           <thead className="text-left text-stone-500">
