@@ -124,6 +124,14 @@ service cloud.firestore {
       }
     }
 
+    // ---------- ผลวิเคราะห์ (Lab 4) ----------
+    // อ่านได้เมื่อล็อกอิน (มีรหัสลูกค้าและยอดซื้อ จึงห้ามคนนอกอ่าน)
+    // เขียนจากเว็บไม่ได้เลย: pipeline (npm run analytics / GitHub Actions) ใช้ firebase-admin จึงไม่ผ่าน rules
+    match /analytics/{docId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     // collection อื่นที่ไม่ได้เขียนไว้ข้างบน: ปิดทั้งหมดเป็นค่าเริ่มต้น
   }
 }
